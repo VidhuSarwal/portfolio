@@ -15,8 +15,8 @@ const GAP = 6;
 const RADIUS = 6;
 const FALLOFF_RADIUS = 180;
 const LERP_FACTOR = 0.15;
-const PEAK_BORDER_OPACITY = 0.55;
-const REST_BORDER_OPACITY = 0.06;
+const PEAK_BORDER_OPACITY = 0.65;
+const REST_BORDER_OPACITY = 0.12;
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -99,7 +99,7 @@ export default function GridWall() {
         ctx.roundRect(cell.x, cell.y, cellSize, cellSize, RADIUS);
 
         if (cell.brightness > 0.01) {
-          ctx.fillStyle = `rgba(255,255,255,${0.03 * cell.brightness})`;
+          ctx.fillStyle = `rgba(255,255,255,${0.06 * cell.brightness})`;
           ctx.fill();
         }
 
@@ -112,7 +112,14 @@ export default function GridWall() {
     }
 
     function onMouseMove(e: MouseEvent) {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
+      const rect = canvas.getBoundingClientRect();
+      // If canvas is fully off-screen, suppress glow
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        mouseRef.current = { x: -9999, y: -9999 };
+        return;
+      }
+      // Convert to canvas-local coordinates
+      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
     function onMouseLeave() {
       mouseRef.current = { x: -9999, y: -9999 };

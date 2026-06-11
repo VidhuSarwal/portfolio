@@ -28,6 +28,7 @@ export default function Contact() {
             <li>
               <a
                 href="mailto:vidhu.sarwal19@gmail.com"
+                data-label="[ SEND MAIL ]"
                 className="text-body"
                 style={{ color: 'var(--text-primary)', textDecoration: 'none', transition: 'color 0.2s' }}
               >
@@ -37,6 +38,7 @@ export default function Contact() {
             <li>
               <a
                 href="https://github.com/VidhuSarwal"
+                data-label="[ GITHUB ]"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-body"
@@ -48,6 +50,7 @@ export default function Contact() {
             <li>
               <a
                 href="https://linkedin.com/in/vidhusarwal"
+                data-label="[ LINKEDIN ]"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-body"

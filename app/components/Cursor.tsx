@@ -2,15 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+const TRAIL_COUNT = 6;
+const HISTORY_LENGTH = 32; // position buffer — controls trail spread
+
 export default function Cursor() {
   const [hasHover, setHasHover] = useState(false);
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const posRef = useRef({ x: 0, y: 0 });
-  const ringPosRef = useRef({ x: 0, y: 0 });
-  const rafRef = useRef<number>(0);
-  const isHoveringRef = useRef(false);
-  const isPressedRef = useRef(false);
+  const [label, setLabel] = useState('');
+
+  const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const labelRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<{ x: number; y: number }[]>([]);
+  const currentRef = useRef({ x: -200, y: -200 });
+  const rafRef = useRef(0);
+  const labelDebounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     setHasHover(window.matchMedia('(hover: hover)').matches);
@@ -18,74 +22,71 @@ export default function Cursor() {
 
   useEffect(() => {
     if (!hasHover) return;
-    const dot = dotRef.current;
-    const ring = ringRef.current;
-    if (!dot || !ring) return;
 
-    // Hide native cursor
-    document.documentElement.style.cursor = 'none';
+    historyRef.current = Array(HISTORY_LENGTH).fill({ x: -200, y: -200 });
 
     function onMouseMove(e: MouseEvent) {
-      posRef.current = { x: e.clientX, y: e.clientY };
-      dot!.style.transform = `translate(${e.clientX - 3}px, ${e.clientY - 3}px)`;
-    }
+      currentRef.current = { x: e.clientX, y: e.clientY };
 
-    function onMouseOver(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (target.closest('a, button, [role="button"], [tabindex]')) {
-        isHoveringRef.current = true;
+      // Detect interactive element for label
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const target = el?.closest('a, button, [data-label]') as HTMLElement | null;
+
+      clearTimeout(labelDebounceRef.current);
+      if (target) {
+        const text = target.dataset.label
+          ?? (target.tagName === 'A' && (target as HTMLAnchorElement).href.startsWith('mailto') ? '[ MAIL ]' : null)
+          ?? (target.tagName === 'A' ? '[ OPEN ]' : '[ SELECT ]');
+        setLabel(text);
+      } else {
+        // slight delay on clear so label doesn't flicker during fast movement
+        labelDebounceRef.current = setTimeout(() => setLabel(''), 80);
       }
-    }
-
-    function onMouseOut(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (target.closest('a, button, [role="button"], [tabindex]')) {
-        isHoveringRef.current = false;
-      }
-    }
-
-    function onMouseDown() {
-      isPressedRef.current = true;
-    }
-
-    function onMouseUp() {
-      isPressedRef.current = false;
     }
 
     function animate() {
-      const LERP = 0.12;
-      ringPosRef.current.x = ringPosRef.current.x + (posRef.current.x - ringPosRef.current.x) * LERP;
-      ringPosRef.current.y = ringPosRef.current.y + (posRef.current.y - ringPosRef.current.y) * LERP;
+      const pos = currentRef.current;
 
-      const rx = ringPosRef.current.x;
-      const ry = ringPosRef.current.y;
+      // Push current position to front of history buffer
+      historyRef.current = [pos, ...historyRef.current.slice(0, HISTORY_LENGTH - 1)];
 
-      const size = isPressedRef.current ? 24 : isHoveringRef.current ? 60 : 36;
-      const color = isHoveringRef.current ? 'var(--accent)' : 'var(--border-active)';
+      // Sample history at increasing intervals for natural spread
+      // i=0 is the lead dot, spaced at 0; trail dots sampled further back
+      const sampleSteps = [0, 2, 4, 7, 11, 16, 22];
 
-      ring!.style.transform = `translate(${rx - size / 2}px, ${ry - size / 2}px)`;
-      ring!.style.width = `${size}px`;
-      ring!.style.height = `${size}px`;
-      ring!.style.borderColor = color;
+      sampleSteps.slice(0, TRAIL_COUNT + 1).forEach((step, i) => {
+        const dot = dotsRef.current[i];
+        if (!dot) return;
+
+        const p = historyRef.current[Math.min(step, HISTORY_LENGTH - 1)];
+        const isLead = i === 0;
+        const t = i / TRAIL_COUNT; // 0 = lead, 1 = tail
+
+        const size = isLead ? 5 : Math.max(1.5, 4 - t * 2.5);
+        const opacity = isLead ? 1 : Math.max(0, 0.7 - t * 0.65);
+
+        dot.style.transform = `translate(${p.x - size / 2}px, ${p.y - size / 2}px)`;
+        dot.style.width = `${size}px`;
+        dot.style.height = `${size}px`;
+        dot.style.opacity = String(opacity);
+      });
+
+      // Label follows lead dot with slight offset
+      const labelEl = labelRef.current;
+      if (labelEl) {
+        labelEl.style.transform = `translate(${pos.x + 13}px, ${pos.y - 9}px)`;
+      }
 
       rafRef.current = requestAnimationFrame(animate);
     }
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseover', onMouseOver);
-    window.addEventListener('mouseout', onMouseOut);
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      document.documentElement.style.cursor = '';
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseover', onMouseOver);
-      window.removeEventListener('mouseout', onMouseOut);
-      window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
       cancelAnimationFrame(rafRef.current);
+      clearTimeout(labelDebounceRef.current);
     };
   }, [hasHover]);
 
@@ -93,41 +94,58 @@ export default function Cursor() {
 
   return (
     <>
-      {/* Dot — follows 1:1 */}
+      {Array.from({ length: TRAIL_COUNT + 1 }).map((_, i) => {
+        const isLead = i === 0;
+        return (
+          <div
+            key={i}
+            ref={el => { dotsRef.current[i] = el; }}
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              borderRadius: '50%',
+              // Lead dot: crisp white. Trail: subtle shift toward accent
+              background: isLead
+                ? '#F4F4F2'
+                : `rgba(200, 228, 255, ${0.85 - i * 0.1})`,
+              pointerEvents: 'none',
+              zIndex: 9999,
+              willChange: 'transform',
+              // No CSS transition — animation loop handles smoothness
+            }}
+          />
+        );
+      })}
+
+      {/* Label */}
       <div
-        ref={dotRef}
+        ref={labelRef}
         aria-hidden="true"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          background: 'var(--text-primary)',
-          pointerEvents: 'none',
-          zIndex: 9999,
-          willChange: 'transform',
-        }}
-      />
-      {/* Ring — follows with lerp */}
-      <div
-        ref={ringRef}
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          border: '1px solid var(--border-active)',
+          fontFamily: 'var(--font-jetbrains), monospace',
+          fontSize: '10px',
+          letterSpacing: '0.13em',
+          textTransform: 'uppercase',
+          color: '#C8E4FF',
+          background: 'rgba(14,14,14,0.88)',
+          border: '1px solid rgba(200,228,255,0.15)',
+          padding: '3px 8px',
+          borderRadius: '2px',
+          opacity: label ? 1 : 0,
+          transition: 'opacity 0.12s ease',
           pointerEvents: 'none',
           zIndex: 9998,
-          willChange: 'transform, width, height',
-          transition: 'width 0.2s ease, height 0.2s ease, border-color 0.2s ease',
+          willChange: 'transform',
+          whiteSpace: 'nowrap',
         }}
-      />
+      >
+        {label}
+      </div>
     </>
   );
 }

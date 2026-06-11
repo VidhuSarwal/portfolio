@@ -1,22 +1,13 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { JetBrains_Mono } from 'next/font/google';
-import localFont from 'next/font/local';
+import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 import Cursor from '@/app/components/Cursor';
 import './globals.css';
 
-const cabinet = localFont({
-  src: '../public/fonts/CabinetGrotesk-Variable.woff2',
-  variable: '--font-cabinet',
-  display: 'swap',
-  weight: '100 900',
-});
-
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-display',
   display: 'swap',
-  weight: ['400', '500'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const jetbrains = JetBrains_Mono({
@@ -29,7 +20,7 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Vidhu Sarwal — Systems Engineer',
   description:
-    'Final-year CS undergrad. GSoC \'25 at BeagleBoard.org. Samsung PRISM. Linux Kernel Mentorship Program.',
+    "Final-year CS undergrad. GSoC '25 at BeagleBoard.org. Samsung PRISM. Linux Kernel Mentorship Program.",
   openGraph: {
     title: 'Vidhu Sarwal — Systems Engineer',
     description: 'Linux kernel · Distributed systems · AI infrastructure.',
@@ -43,7 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cabinet.variable} ${inter.variable} ${jetbrains.variable}`}
+      className={`${spaceGrotesk.variable} ${jetbrains.variable}`}
     >
       <body>
         <Cursor />

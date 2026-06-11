@@ -7,12 +7,13 @@ export default function NavOverlay() {
       <a
         href="#hero"
         aria-label="Back to top"
+        data-label="[ TOP ]"
         style={{
           position: 'fixed',
           top: '24px',
           left: 'clamp(24px, 5.5vw, 80px)',
           zIndex: 50,
-          fontFamily: 'var(--font-cabinet)',
+          fontFamily: 'var(--font-display)',
           fontSize: '18px',
           fontWeight: 700,
           color: 'var(--text-primary)',

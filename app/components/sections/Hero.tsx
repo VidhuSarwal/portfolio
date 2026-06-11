@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import GridWall from '@/app/components/GridWall';
+import CipherLock from '@/app/components/CipherLock';
 
 export default function Hero() {
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -96,6 +97,18 @@ export default function Hero() {
     >
       <GridWall />
 
+      {/* Content shadow — dims the grid behind the text, keeps it alive at the edges */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse 55% 80% at 28% 50%, rgba(8,8,8,0.82) 0%, rgba(8,8,8,0.45) 55%, transparent 100%)',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
       <div className="content-grid w-full" style={{ position: 'relative', zIndex: 1 }}>
         <div className="col-span-12 lg:col-span-7">
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '28px' }}>
@@ -112,12 +125,7 @@ export default function Hero() {
           </h1>
 
           <div ref={contentRef}>
-            <p
-              className="text-section"
-              style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}
-            >
-              Linux kernel · Distributed systems · AI infrastructure.
-            </p>
+            <CipherLock delay={700} />
 
             <span className="sep-line" />
 
@@ -132,6 +140,7 @@ export default function Hero() {
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               <a
                 href="#sbc-showcase"
+                data-label="[ VIEW WORK ]"
                 className="text-mono"
                 style={{
                   color: 'var(--text-primary)',
@@ -146,6 +155,7 @@ export default function Hero() {
               </a>
               <a
                 href="#contact"
+                data-label="[ CONTACT ]"
                 className="text-mono"
                 style={{
                   color: 'var(--text-secondary)',
