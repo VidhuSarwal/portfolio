@@ -21,7 +21,7 @@ export default function NavOverlay() {
           letterSpacing: '-0.01em',
         }}
       >
-        VS.
+        VX.
       </a>
 
       {/* Top-right section counter — static for M1, dynamic in M3 */}
