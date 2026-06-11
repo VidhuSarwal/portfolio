@@ -121,6 +121,13 @@ body {
   color: var(--text-secondary);
 }
 
+/* ─── Custom cursor — hide native on pointer devices ───────────────── */
+@media (hover: hover) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
 /* ─── Section separator line ────────────────────────────────────────── */
 .sep-line {
   display: block;

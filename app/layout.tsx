@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
+import Cursor from '@/app/components/Cursor';
 import './globals.css';
 
 const cabinet = localFont({
@@ -44,7 +45,10 @@ export default function RootLayout({
       lang="en"
       className={`${cabinet.variable} ${inter.variable} ${jetbrains.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <Cursor />
+        {children}
+      </body>
     </html>
   );
 }
