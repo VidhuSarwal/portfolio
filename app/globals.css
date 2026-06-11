@@ -1,26 +1,131 @@
 @import "tailwindcss";
 
+/* ─── Design tokens ─────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-base:        #080808;
+  --bg-elevated:    #0E0E0E;
+  --border-rest:    rgba(255, 255, 255, 0.06);
+  --border-active:  rgba(255, 255, 255, 0.45);
+  --text-primary:   #F4F4F2;
+  --text-secondary: #8A8A88;
+  --text-tertiary:  #4A4A48;
+  --accent:         #C8E4FF;
 }
 
+/* ─── Tailwind theme bridge ─────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-base:       var(--bg-base);
+  --color-bg-elevated:   var(--bg-elevated);
+  --color-text-primary:  var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-accent:        var(--accent);
+  --font-display: var(--font-cabinet);
+  --font-body:    var(--font-inter);
+  --font-mono:    var(--font-jetbrains);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base reset ────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* ─── Typography scale (fluid) ──────────────────────────────────────── */
+.text-hero {
+  font-family: var(--font-cabinet), system-ui, sans-serif;
+  font-size: clamp(56px, 9vw, 144px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.text-section {
+  font-family: var(--font-cabinet), system-ui, sans-serif;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+
+.text-project {
+  font-family: var(--font-cabinet), system-ui, sans-serif;
+  font-size: clamp(24px, 2.5vw, 36px);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.text-body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: clamp(15px, 1vw, 17px);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-mono {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+/* ─── Layout utilities ──────────────────────────────────────────────── */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: clamp(24px, 5.5vw, 80px);
+  width: 100%;
+}
+
+.section-gap {
+  padding-block: clamp(160px, 20vh, 240px);
+}
+
+/* ─── Focus rings ───────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* ─── Tag pills ─────────────────────────────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--border-rest);
+  border-radius: 2px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+/* ─── Section separator line ────────────────────────────────────────── */
+.sep-line {
+  display: block;
+  width: 80px;
+  height: 1px;
+  background: var(--border-active);
+  margin-block: 28px;
 }
