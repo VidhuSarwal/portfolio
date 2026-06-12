@@ -3,20 +3,140 @@
 import { useEffect, useRef, useState } from 'react';
 import GridWall from '@/app/components/GridWall';
 import CipherLock from '@/app/components/CipherLock';
+import { useLoader } from '@/app/providers/LoaderContext';
 
-// TODO: confirm whether LFX'26 is a separate upcoming mentorship or alias for LKMP
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%&?';
+const SCRAMBLE_DIGITS = '0123456789';
+
+// All delays are relative to when isDone fires (loader complete), not page mount
+const CRED_START = 2500;
+const CRED_STAGGER = 380;
+const CTA_START = CRED_START + 2 * CRED_STAGGER + 620; // ≈ 3880ms after loader
+
 const CREDENTIALS = [
-  { index: '01', label: 'LFX MENTORSHIP', year: "'26" },
+  { index: '01', label: 'LINUX KERNEL MENTORSHIP PROGRAM · LFX', year: "'26" },
   { index: '02', label: 'GOOGLE SUMMER OF CODE · BEAGLEBOARD.ORG', year: "'25" },
-  { index: '03', label: 'SAMSUNG R&D · RESEARCH INTERN', year: "'25" },
+  { index: '03', label: 'SAMSUNG R&D · PRISM RESEARCH INTERN', year: "'25" },
 ];
 
+function useScramble(target: string, startDelay: number, charSet = SCRAMBLE_CHARS) {
+  const [display, setDisplay] = useState<string | null>(null);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { setDisplay(target); return; }
+
+    const t = setTimeout(() => {
+      const PHASE1_END = 200;
+      const LOCK_AT = 480;
+      const start = Date.now();
+      function tick() {
+        const elapsed = Date.now() - start;
+        if (elapsed >= LOCK_AT) {
+          setDisplay(target);
+          setFlash(true);
+          setTimeout(() => setFlash(false), 200);
+          return;
+        }
+        const intensity = elapsed < PHASE1_END
+          ? 1.0
+          : 1.0 - ((elapsed - PHASE1_END) / (LOCK_AT - PHASE1_END)) * 0.92;
+        setDisplay(
+          target.split('').map((ch) =>
+            ch === ' ' || ch === '·' || ch === "'"
+              ? ch
+              : Math.random() < intensity
+                ? charSet[Math.floor(Math.random() * charSet.length)]
+                : ch
+          ).join('')
+        );
+        setTimeout(tick, 55);
+      }
+      tick();
+    }, startDelay);
+
+    return () => clearTimeout(t);
+  }, [target, startDelay, charSet]);
+
+  return { display, flash };
+}
+
+function ScrambleSpan({
+  target,
+  startDelay,
+  charSet = SCRAMBLE_CHARS,
+  style,
+}: {
+  target: string;
+  startDelay: number;
+  charSet?: string;
+  style?: React.CSSProperties;
+}) {
+  const { display, flash } = useScramble(target, startDelay, charSet);
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        fontVariantNumeric: 'tabular-nums',
+        color: flash ? 'var(--accent)' : 'inherit',
+        transition: flash ? 'none' : 'color 0.3s ease, opacity 0.1s ease',
+        opacity: display === null ? 0 : 1,
+        ...style,
+      }}
+    >
+      {display ?? target}
+    </span>
+  );
+}
+
+function UnmaskReveal({
+  children,
+  startDelay,
+  style,
+}: {
+  children: React.ReactNode;
+  startDelay: number;
+  style?: React.CSSProperties;
+}) {
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { setActive(true); return; }
+    const t = setTimeout(() => setActive(true), startDelay);
+    return () => clearTimeout(t);
+  }, [startDelay]);
+
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', ...style }}>
+      {children}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: '-1px',
+          background: 'repeating-linear-gradient(-45deg, var(--text-primary) 0px, var(--text-primary) 1px, var(--text-tertiary) 1px, var(--text-tertiary) 4px)',
+          clipPath: active ? 'inset(0 0 0 101%)' : 'inset(0 0 0 0%)',
+          transition: active ? 'clip-path 0.52s cubic-bezier(0.77,0,0.175,1)' : 'none',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      />
+    </span>
+  );
+}
+
 export default function Hero() {
+  const { isDone } = useLoader();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [hintVisible, setHintVisible] = useState(true);
 
+  // Fire GSAP only after loader completes
   useEffect(() => {
+    if (!isDone) return;
+
     async function init() {
       const gsapMod = await import('gsap');
       const gsap = gsapMod.gsap;
@@ -31,9 +151,11 @@ export default function Hero() {
       try {
         const splitMod = await import('gsap/SplitText');
         gsap.registerPlugin(splitMod.SplitText);
-        const tl = gsap.timeline({ delay: 0.1 });
-        // @ts-expect-error dynamic import
-        const split = new splitMod.SplitText(headingRef.current, { type: 'chars' });
+        const tl = gsap.timeline();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const split = new (splitMod.SplitText as any)(headingRef.current, { type: 'chars' });
+        // Parent h1 must be visible; chars start at opacity:0 via fromTo below
+        if (headingRef.current) headingRef.current.style.opacity = '1';
         tl.fromTo(split.chars,
           { y: 40, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.6, stagger: 0.04, ease: 'power3.out' }
@@ -46,13 +168,13 @@ export default function Hero() {
           );
         }
       } catch {
-        const tl = gsap.timeline({ delay: 0.1 });
+        const tl = gsap.timeline();
         if (headingRef.current) tl.fromTo(headingRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' });
         if (contentRef.current) tl.fromTo(contentRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.3');
       }
     }
     init();
-  }, []);
+  }, [isDone]);
 
   useEffect(() => {
     function onScroll() {
@@ -70,21 +192,19 @@ export default function Hero() {
         position: 'relative',
         minHeight: '100vh',
         display: 'flex',
-        // ~42% from top — editorial sweet spot, slightly above dead-center
         alignItems: 'flex-start',
-        paddingTop: 'clamp(14vh, 18vh, 22vh)',
+        paddingTop: 'clamp(18vh, 22vh, 26vh)',
         overflow: 'hidden',
       }}
     >
       <GridWall />
 
-      {/* Content shadow — dims grid behind text, keeps it alive at edges */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse 55% 80% at 28% 50%, rgba(8,8,8,0.82) 0%, rgba(8,8,8,0.45) 55%, transparent 100%)',
+          background: 'radial-gradient(ellipse 55% 80% at 28% 50%, var(--hero-overlay-near) 0%, var(--hero-overlay-mid) 55%, transparent 100%)',
           zIndex: 0,
           pointerEvents: 'none',
         }}
@@ -93,97 +213,89 @@ export default function Hero() {
       <div className="content-grid w-full" style={{ position: 'relative', zIndex: 1 }}>
         <div className="col-span-12 lg:col-span-8">
 
-          {/* Section label */}
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
             01 / SYSTEMS ENGINEER
           </p>
 
-          {/* Name */}
+          {/* opacity: 0 — GSAP will animate this in once isDone fires */}
           <h1
             ref={headingRef}
             id="hero-heading"
             className="text-hero"
-            style={{ color: 'var(--text-primary)', marginBottom: '20px' }}
+            style={{ color: 'var(--text-primary)', marginBottom: '20px', opacity: 0 }}
           >
             Vidhu Sarwal.
           </h1>
 
-          {/* Cipher lock subtitle + credentials + CTAs */}
-          <div ref={contentRef}>
-            <CipherLock delay={700} />
+          {/* Mounts when loader completes; all child timers start from that moment */}
+          <div ref={contentRef} style={{ opacity: 0 }}>
+            {isDone && (
+              <>
+                <CipherLock delay={700} />
 
-            {/* Credential list */}
-            <ul
-              aria-label="Credentials"
-              style={{
-                listStyle: 'none',
-                marginTop: '28px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-              }}
-            >
-              {CREDENTIALS.map((c) => (
-                <li
-                  key={c.index}
-                  className="text-mono"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '12px',
-                    color: 'var(--text-tertiary)',
-                  }}
+                <ul
+                  aria-label="Credentials"
+                  style={{ listStyle: 'none', marginTop: '28px', display: 'flex', flexDirection: 'column', gap: '6px' }}
                 >
-                  <span style={{ color: 'var(--text-tertiary)', opacity: 0.5, flexShrink: 0 }}>
-                    {c.index}
-                  </span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{c.label}</span>
-                  <span style={{ marginLeft: 'auto', color: 'var(--text-tertiary)', flexShrink: 0 }}>
-                    {c.year}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                  {CREDENTIALS.map((c, i) => {
+                    const delay = CRED_START + i * CRED_STAGGER;
+                    return (
+                      <li
+                        key={c.index}
+                        className="text-mono"
+                        style={{ display: 'flex', alignItems: 'baseline', gap: '8px', color: 'var(--text-secondary)' }}
+                      >
+                        <ScrambleSpan target={c.index} startDelay={delay} charSet={SCRAMBLE_DIGITS} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                        <ScrambleSpan target={c.label} startDelay={delay} />
+                        <ScrambleSpan target={c.year} startDelay={delay} style={{ flexShrink: 0 }} />
+                      </li>
+                    );
+                  })}
+                </ul>
 
-            {/* Separator */}
-            <span className="sep-line" style={{ marginTop: '32px', marginBottom: '32px' }} />
+                <span className="sep-line" style={{ marginTop: '32px', marginBottom: '32px' }} />
 
-            {/* CTAs */}
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <a
-                href="#sbc-showcase"
-                data-label="[ VIEW WORK ]"
-                className="text-mono"
-                style={{
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-active)',
-                  padding: '12px 24px',
-                  textDecoration: 'none',
-                  letterSpacing: '0.12em',
-                  transition: 'border-color 0.2s, color 0.2s',
-                }}
-              >
-                VIEW WORK →
-              </a>
-              <a
-                href="#contact"
-                data-label="[ CONTACT ]"
-                className="text-mono"
-                style={{
-                  color: 'var(--text-secondary)',
-                  textDecoration: 'none',
-                  letterSpacing: '0.12em',
-                  transition: 'color 0.2s',
-                }}
-              >
-                GET IN TOUCH
-              </a>
-            </div>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <UnmaskReveal startDelay={CTA_START}>
+                    <a
+                      href="#sbc-showcase"
+                      data-label="[ VIEW WORK ]"
+                      className="text-mono"
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-active)',
+                        padding: '12px 24px',
+                        textDecoration: 'none',
+                        letterSpacing: '0.12em',
+                        transition: 'border-color 0.2s, color 0.2s',
+                      }}
+                    >
+                      VIEW WORK →
+                    </a>
+                  </UnmaskReveal>
+
+                  <UnmaskReveal startDelay={CTA_START + 120}>
+                    <a
+                      href="#contact"
+                      data-label="[ CONTACT ]"
+                      className="text-mono"
+                      style={{
+                        color: 'var(--text-secondary)',
+                        textDecoration: 'none',
+                        letterSpacing: '0.12em',
+                        transition: 'color 0.2s',
+                      }}
+                    >
+                      GET IN TOUCH
+                    </a>
+                  </UnmaskReveal>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Scroll hint */}
       <p
         className="text-mono"
         style={{

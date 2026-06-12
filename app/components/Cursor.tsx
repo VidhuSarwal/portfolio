@@ -14,7 +14,7 @@ export default function Cursor() {
   const historyRef = useRef<{ x: number; y: number }[]>([]);
   const currentRef = useRef({ x: -200, y: -200 });
   const rafRef = useRef(0);
-  const labelDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const labelDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     setHasHover(window.matchMedia('(hover: hover)').matches);
@@ -108,8 +108,8 @@ export default function Cursor() {
               borderRadius: '50%',
               // Lead dot: crisp white. Trail: subtle shift toward accent
               background: isLead
-                ? '#F4F4F2'
-                : `rgba(200, 228, 255, ${0.85 - i * 0.1})`,
+                ? 'var(--text-primary)'
+                : `color-mix(in srgb, var(--accent) ${Math.round((0.85 - i * 0.1) * 100)}%, transparent)`,
               pointerEvents: 'none',
               zIndex: 9999,
               willChange: 'transform',
@@ -131,9 +131,9 @@ export default function Cursor() {
           fontSize: '10px',
           letterSpacing: '0.13em',
           textTransform: 'uppercase',
-          color: '#C8E4FF',
-          background: 'rgba(14,14,14,0.88)',
-          border: '1px solid rgba(200,228,255,0.15)',
+          color: 'var(--accent)',
+          background: 'color-mix(in srgb, var(--bg-base) 90%, transparent)',
+          border: '1px solid var(--border-rest)',
           padding: '3px 8px',
           borderRadius: '2px',
           opacity: label ? 1 : 0,

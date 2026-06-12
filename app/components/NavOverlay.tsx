@@ -1,17 +1,48 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import CelestialToggle from '@/app/components/CelestialToggle';
+
+const SECTIONS = [
+  { id: 'hero',         num: '01' },
+  { id: 'transition',   num: '02' },
+  { id: 'sbc-showcase', num: '03' },
+  { id: 'experience',   num: '04' },
+  { id: 'tech-stack',   num: '05' },
+  { id: 'contact',      num: '06' },
+];
+
 export default function NavOverlay() {
+  const [num, setNum] = useState('01');
+
+  useEffect(() => {
+    const obs = SECTIONS.map(({ id, num: n }) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const o = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setNum(n);
+            document.dispatchEvent(new CustomEvent('section-change', { detail: n }));
+          }
+        },
+        { rootMargin: '-45% 0px -45% 0px' }
+      );
+      o.observe(el);
+      return o;
+    });
+    return () => obs.forEach(o => o?.disconnect());
+  }, []);
+
   return (
     <>
-      {/* Top-left monogram */}
       <a
         href="#hero"
         aria-label="Back to top"
-        data-label="[ TOP ]"
         style={{
           position: 'fixed',
-          top: '24px',
-          left: 'clamp(24px, 5.5vw, 80px)',
+          top: 'var(--margin-safe-area)',
+          left: 'var(--margin-safe-area)',
           zIndex: 50,
           fontFamily: 'var(--font-display)',
           fontSize: '18px',
@@ -24,19 +55,28 @@ export default function NavOverlay() {
         VX.
       </a>
 
-      {/* Top-right section counter — static for M1, dynamic in M3 */}
-      <p
-        className="text-mono"
+      <div
         style={{
           position: 'fixed',
-          top: '28px',
-          right: 'clamp(24px, 5.5vw, 80px)',
+          top: 'var(--margin-safe-area)',
+          right: 'var(--margin-safe-area)',
           zIndex: 50,
-          color: 'var(--text-tertiary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
         }}
       >
-        01 / 06
-      </p>
+        <CelestialToggle />
+        <p
+          className="text-mono"
+          style={{
+            color: 'var(--text-tertiary)',
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          {num} / 06
+        </p>
+      </div>
     </>
   );
 }

@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 import Cursor from '@/app/components/Cursor';
+import Loader from '@/app/components/Loader';
+import SmoothScroll from '@/app/components/SmoothScroll';
+import CornerBrackets from '@/app/components/CornerBrackets';
+import MarginStatus from '@/app/components/MarginStatus';
+import { LoaderProvider } from '@/app/providers/LoaderContext';
+import { ThemeProvider } from '@/app/providers/ThemeContext';
 import './globals.css';
 
 const spaceGrotesk = Space_Grotesk({
@@ -37,8 +43,17 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrains.variable}`}
     >
       <body>
-        <Cursor />
-        {children}
+        <ThemeProvider>
+          <LoaderProvider>
+            <Loader />
+            <CornerBrackets />
+            <MarginStatus />
+            <SmoothScroll>
+              <Cursor />
+              {children}
+            </SmoothScroll>
+          </LoaderProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

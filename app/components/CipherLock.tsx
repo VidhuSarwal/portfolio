@@ -23,7 +23,7 @@ export default function CipherLock({ delay = 0 }: { delay?: number }) {
   const [words, setWords] = useState(['', '', '']);
   const [locked, setLocked] = useState([false, false, false]);
   const [flash, setFlash] = useState([false, false, false]);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -104,7 +104,7 @@ export default function CipherLock({ delay = 0 }: { delay?: number }) {
           <span style={{
             display: 'inline-block',
             minWidth: i === 0 ? '8ch' : i === 1 ? '15ch' : '13ch',
-            color: flash[i] ? 'var(--accent)' : locked[i] ? 'var(--text-tertiary)' : '#8A8A88',
+            color: flash[i] ? 'var(--accent)' : locked[i] ? 'var(--text-tertiary)' : 'var(--text-secondary)',
             transition: flash[i] ? 'none' : 'color 0.4s ease',
             fontVariantNumeric: 'tabular-nums',
           }}>

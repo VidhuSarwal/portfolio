@@ -1,15 +1,42 @@
 @import "tailwindcss";
 
-/* ─── Design tokens ─────────────────────────────────────────────────── */
+/* ─── Design tokens — dark (default) ───────────────────────────────── */
 :root {
-  --bg-base:        #080808;
-  --bg-elevated:    #0E0E0E;
-  --border-rest:    rgba(255, 255, 255, 0.06);
-  --border-active:  rgba(255, 255, 255, 0.45);
-  --text-primary:   #F4F4F2;
-  --text-secondary: #8A8A88;
-  --text-tertiary:  #4A4A48;
-  --accent:         #C8E4FF;
+  --bg-base:           #080808;
+  --bg-elevated:       #0E0E0E;
+  --border-rest:       rgba(255, 255, 255, 0.06);
+  --border-active:     rgba(255, 255, 255, 0.45);
+  --border-subtle:     rgba(255, 255, 255, 0.13);
+  --hover-surface:     rgba(255, 255, 255, 0.025);
+  --text-primary:      #F4F4F2;
+  --text-secondary:    #8A8A88;
+  --text-tertiary:     #4A4A48;
+  --accent:            #C8E4FF;
+  --frame-stroke:      rgba(255, 255, 255, 0.07);
+  --margin-safe-area:  clamp(32px, 4vw, 64px);
+  --corner-length:     56px;
+}
+
+/* ─── Design tokens — light ─────────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg-base:           #F8F6F1;
+  --bg-elevated:       #EFECE5;
+  --border-rest:       rgba(0, 0, 0, 0.07);
+  --border-active:     rgba(0, 0, 0, 0.40);
+  --border-subtle:     rgba(0, 0, 0, 0.10);
+  --hover-surface:     rgba(0, 0, 0, 0.030);
+  --text-primary:      #1C1A17;
+  --text-secondary:    #6B6865;
+  --text-tertiary:     #B5B2AB;
+  --accent:            #2C5282;
+  --hero-overlay-near: rgba(248, 246, 241, 0.88);
+  --hero-overlay-mid:  rgba(248, 246, 241, 0.52);
+  --frame-stroke:      rgba(0, 0, 0, 0.06);
+}
+
+:root {
+  --hero-overlay-near: rgba(8, 8, 8, 0.82);
+  --hero-overlay-mid:  rgba(8, 8, 8, 0.45);
 }
 
 /* ─── Tailwind theme bridge ─────────────────────────────────────────── */
@@ -135,4 +162,97 @@ body {
   height: 1px;
   background: var(--border-active);
   margin-block: 28px;
+}
+
+/* ─── Theme transition class (added for ~600ms during mode switch) ─── */
+html.theme-transitioning,
+html.theme-transitioning body,
+html.theme-transitioning *:not(canvas) {
+  transition:
+    background-color 500ms ease,
+    color 400ms ease,
+    border-color 400ms ease,
+    fill 300ms ease,
+    stroke 300ms ease !important;
+}
+
+/* ─── Corner brackets ───────────────────────────────────────────────── */
+@keyframes bracket-breathe {
+  0%, 100% { opacity: 0.12; }
+  50%       { opacity: 0.22; }
+}
+@keyframes bracket-pulse {
+  0%   { opacity: 0.38; }
+  100% { opacity: 0.12; }
+}
+
+.corner-bracket {
+  animation: bracket-breathe 8s ease-in-out infinite;
+  opacity: 0.12;
+}
+/* Pulse overrides breathe via higher specificity when class is added */
+.corner-bracket.bracket-pulse {
+  animation: bracket-pulse 0.55s ease-out forwards;
+}
+
+/* ─── Celestial toggle ──────────────────────────────────────────────── */
+@keyframes celestial-breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.018); }
+}
+
+.celestial-icon {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.celestial-btn:hover:not([data-animating]) .celestial-icon {
+  animation: celestial-breathe 2.4s ease-in-out infinite;
+  filter: url('#cg');
+}
+
+/* ─── Screen-reader only ────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Tooltip fade-in ───────────────────────────────────────────────── */
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes tooltipInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+}
+
+/* ─── Ticker marquee ─────────────────────────────────────────────────── */
+@keyframes marqueeLeft {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-33.333%); }
+}
+@keyframes marqueeRight {
+  from { transform: translateX(-33.333%); }
+  to   { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none !important; }
+}
+
+/* ─── Scroll spline — desktop only ─────────────────────────────────── */
+.scroll-spline {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .scroll-spline {
+    display: block;
+  }
 }
