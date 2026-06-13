@@ -10,30 +10,19 @@ export type Experience = {
   configKey: 'showSamsung' | 'showGSOC' | 'showLKMP' | null;
 };
 
+// Chronological order — oldest to newest (scroll narrative: growth over time)
 export const experiences: Experience[] = [
   {
-    id: 'lkmp',
-    company: 'Linux Foundation',
-    role: 'Kernel Developer Mentee — LFX Mentorship',
-    dateRange: 'Jun 2026 – Present',
-    year: '2026',
+    id: 'sentinal',
+    company: 'Sentinal Innovations',
+    role: 'Engineering Intern — Embedded Systems & IoT',
+    dateRange: 'Jun 2024 – Aug 2024',
+    year: '2024',
     description:
-      'Selected for the Linux Kernel Mentorship Program under maintainer mentorship. Contributing to kernel bug triage, fixes, and upstream patch submission — building on mainline-upstreamed work from Google Summer of Code.',
-    tags: ['C', 'Linux Kernel', 'Git', 'Patch Workflow', 'LKML'],
-    logoSlug: 'linux',
-    configKey: 'showLKMP',
-  },
-  {
-    id: 'gsoc',
-    company: 'Google Summer of Code',
-    role: 'Open Source Software Engineering Intern — BeagleBoard.org',
-    dateRange: 'Jun 2025 – Sep 2025',
-    year: '2025',
-    description:
-      'Selected from 40,000+ global applicants. Wrote production C/C++ for Linux-hosted hardware testing: I2C bus scan, EEPROM dispatch, mikroBUS ClickID auto-detection. 30% performance improvement; patches CI-tested and upstreamed to mainline with DCO sign-off.',
-    tags: ['C', 'C++', 'I2C', 'Linux', 'Buildroot', 'MQTT', 'Mongoose'],
-    logoSlug: 'gsoc',
-    configKey: 'showGSOC',
+      'Built ESP32 firmware in Embedded C for an IoT relay control system with a real-time monitoring dashboard. Shipped to 50+ homes, cutting energy use 25%. Designed a clean firmware API layer keeping hardware and application layers independently deployable.',
+    tags: ['Embedded C', 'ESP32', 'MQTT', 'IoT', 'FreeRTOS'],
+    logoSlug: 'sentinal',
+    configKey: null,
   },
   {
     id: 'samsung',
@@ -48,15 +37,27 @@ export const experiences: Experience[] = [
     configKey: 'showSamsung',
   },
   {
-    id: 'sentinal',
-    company: 'Sentinal Innovations',
-    role: 'Engineering Intern — Embedded Systems & IoT',
-    dateRange: 'Jun 2024 – Aug 2024',
-    year: '2024',
+    id: 'gsoc',
+    company: 'Google Summer of Code',
+    role: 'Software Engineering Intern — BeagleBoard.org · Open Source',
+    dateRange: 'Jun 2025 – Sep 2025',
+    year: '2025',
     description:
-      'Built ESP32 firmware in Embedded C for an IoT relay control system with a real-time monitoring dashboard. Shipped to 50+ homes, cutting energy use 25%. Designed a clean firmware API layer keeping hardware and application layers independently deployable.',
-    tags: ['Embedded C', 'ESP32', 'MQTT', 'IoT', 'FreeRTOS'],
-    logoSlug: 'sentinal',
-    configKey: null,
+      'Selected from 40,000+ global applicants. Wrote production C/C++ for Linux-hosted hardware testing: I2C bus scan, EEPROM dispatch, mikroBUS ClickID auto-detection. 30% performance improvement; patches CI-tested and upstreamed to mainline with DCO sign-off.',
+    tags: ['C', 'C++', 'I2C', 'Linux', 'Buildroot', 'MQTT', 'Mongoose'],
+    logoSlug: 'gsoc',
+    configKey: 'showGSOC',
+  },
+  {
+    id: 'lkmp',
+    company: 'Linux Foundation',
+    role: 'Kernel Developer Mentee — LFX Mentorship',
+    dateRange: 'Jun 2026 – Present',
+    year: '2026',
+    description:
+      'Selected for the Linux Kernel Mentorship Program under maintainer mentorship. Contributing to kernel bug triage, fixes, and upstream patch submission — building on mainline-upstreamed work from Google Summer of Code.',
+    tags: ['C', 'Linux Kernel', 'Git', 'Patch Workflow', 'LKML'],
+    logoSlug: 'linux',
+    configKey: 'showLKMP',
   },
 ];

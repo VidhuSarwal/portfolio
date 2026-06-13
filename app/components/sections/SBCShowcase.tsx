@@ -105,7 +105,7 @@ function drawGSOC(ctx: CanvasRenderingContext2D, w: number, h: number, t: number
 
     for (let s = 0; s <= steps; s++) {
       const px     = LX + (s / steps) * traceW;
-      if (px > sweepX) break;
+      if (px > sweepX - 3) break;
 
       const pos    = s / steps;
       const phase  = ((pos * ch.freq) + t * 0.12) % 1;
@@ -140,9 +140,9 @@ function drawGSOC(ctx: CanvasRenderingContext2D, w: number, h: number, t: number
     }
     ctx.stroke();
 
-    // Detection spike on active channel
-    if (on && sweepT > 0.1) {
-      const spikeX = sweepX - 16;
+    // Detection spike on active channel — fixed position, visible once sweep passes
+    const spikeX = LX + traceW * 0.62;
+    if (on && sweepX > spikeX + 12) {
       ctx.strokeStyle = B(0.9);
       ctx.lineWidth   = 1.5;
       ctx.beginPath();
@@ -874,7 +874,11 @@ export default function Projects() {
       const cw = canvas!.offsetWidth;
       const ch = canvas!.offsetHeight;
 
-      ctx.clearRect(0, 0, cw, ch);
+      // Reset transform to clear physical pixels, then restore
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas!.width, canvas!.height);
+      ctx.restore();
 
       if (vz.transitioning) {
         vz.alpha = Math.min(1, vz.alpha + 0.045);

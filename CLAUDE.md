@@ -114,6 +114,12 @@ function springStep(pos: number, vel: number, target: number, k: number, d: numb
 
 ---
 
+## Brand
+
+- **VX. Works** is the project's logo and wordmark (note the period after VX). Used in the canvas footer signal field and the footer bar logo mark. Never change the spelling or punctuation.
+
+---
+
 ## Dev commands
 
 ```bash

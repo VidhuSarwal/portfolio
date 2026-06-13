@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 96" width="480" height="96">
+  <!-- VX. Works — horizontal wordmark -->
+  <text
+    x="0"
+    y="74"
+    font-family="'Space Grotesk', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="700"
+    font-size="80"
+    fill="#0A0A0A"
+    dominant-baseline="auto"
+    letter-spacing="-2"
+  >VX.</text>
+  <text
+    x="196"
+    y="74"
+    font-family="'Space Grotesk', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="500"
+    font-size="80"
+    fill="#0A0A0A"
+    dominant-baseline="auto"
+    letter-spacing="-2"
+  >Works</text>
+</svg>

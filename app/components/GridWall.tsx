@@ -138,15 +138,15 @@ export default function GridWall() {
         if (sparklesRef.current.length >= MAX_SPARKLES) break;
         const c = mg + Math.floor(Math.random() * (cols - mg * 2));
         const r = mg + Math.floor(Math.random() * (rows - mg * 2));
-        const mainLen = 20 + Math.random() * 18; // 20–38px
+        const mainLen = 12 + Math.random() * 10; // 12–22px — short, sharp
         sparklesRef.current.push({
           x: c * step,
           y: r * step,
           progress: 0,
-          // Lifetime: 1.0–1.8 seconds at 60fps
-          speed: 1 / ((60 + Math.random() * 48) * 1),
+          // Lifetime: 0.9–1.5 seconds at 60fps
+          speed: 1 / ((54 + Math.random() * 36) * 1),
           mainLen,
-          diagLen: mainLen * (0.45 + Math.random() * 0.20), // 45–65% of main
+          diagLen: 0,
           isAccent: Math.random() < 0.35,
         });
       }
@@ -156,11 +156,11 @@ export default function GridWall() {
     }
 
     function drawSparkle(s: Sparkle, themeT: number) {
-      const { x, y, progress, mainLen, diagLen, isAccent } = s;
+      const { x, y, progress, mainLen, isAccent } = s;
       if (mainLen < 1) return;
 
-      const expandEnd = 0.25;
-      const holdEnd   = 0.45;
+      const expandEnd = 0.20;
+      const holdEnd   = 0.50;
       const expandT   = Math.min(progress / expandEnd, 1);
       const armFrac   = easeOutCubic(expandT);
 
@@ -176,56 +176,30 @@ export default function GridWall() {
       if (opacity < 0.01) return;
 
       const curMainLen = mainLen * armFrac;
-      const curDiagLen = diagLen * armFrac;
 
       const core = isAccent
         ? mixRGB(SPARK_DARK,  SPARK_LIGHT,  themeT)
         : mixRGB(SPARK2_DARK, SPARK2_LIGHT, themeT);
-      const glow = mixRGB(SPARK_DARK, SPARK_LIGHT, themeT);
-      const dot  = mixRGB(DOT_DARK,   DOT_LIGHT,   themeT);
+      const dot  = mixRGB(DOT_DARK, DOT_LIGHT, themeT);
 
       c.save();
-      c.lineWidth = 1.8;
+      c.lineWidth = 1.0;
 
+      // Sharp cardinal cross — solid color, no gradient
       const cardinalDirs = [[0,-1],[0,1],[1,0],[-1,0]];
       for (const [dx, dy] of cardinalDirs) {
         const tx = x + dx * curMainLen;
         const ty = y + dy * curMainLen;
         if (Math.abs(tx - x) < 0.5 && Math.abs(ty - y) < 0.5) continue;
-        const g = c.createLinearGradient(x, y, tx, ty);
-        g.addColorStop(0,    `rgba(${core},${opacity * 0.95})`);
-        g.addColorStop(0.55, `rgba(${core},${opacity * 0.50})`);
-        g.addColorStop(1,    `rgba(${core},0)`);
         c.beginPath(); c.moveTo(x, y); c.lineTo(tx, ty);
-        c.strokeStyle = g; c.stroke();
+        c.strokeStyle = `rgba(${core},${opacity * 0.80})`;
+        c.stroke();
       }
 
-      if (curDiagLen > 1) {
-        c.lineWidth = 1.2;
-        const D = 0.7071;
-        const diagDirs = [[D,-D],[D,D],[-D,D],[-D,-D]];
-        for (const [dx, dy] of diagDirs) {
-          const tx = x + dx * curDiagLen;
-          const ty = y + dy * curDiagLen;
-          const g = c.createLinearGradient(x, y, tx, ty);
-          g.addColorStop(0, `rgba(${core},${opacity * 0.55})`);
-          g.addColorStop(1, `rgba(${core},0)`);
-          c.beginPath(); c.moveTo(x, y); c.lineTo(tx, ty);
-          c.strokeStyle = g; c.stroke();
-        }
-      }
-
+      // Center dot
       c.beginPath();
-      c.arc(x, y, 2.2, 0, Math.PI * 2);
-      c.fillStyle = `rgba(${dot},${opacity * 0.95})`;
-      c.fill();
-
-      const rg = c.createRadialGradient(x, y, 0, x, y, 7);
-      rg.addColorStop(0, `rgba(${glow},${opacity * 0.30})`);
-      rg.addColorStop(1, `rgba(${glow},0)`);
-      c.beginPath();
-      c.arc(x, y, 7, 0, Math.PI * 2);
-      c.fillStyle = rg;
+      c.arc(x, y, 1.5, 0, Math.PI * 2);
+      c.fillStyle = `rgba(${dot},${opacity})`;
       c.fill();
 
       c.restore();

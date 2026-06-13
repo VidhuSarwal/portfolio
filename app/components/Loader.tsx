@@ -13,13 +13,13 @@ const T_EXT_START    = 0.6;
 const T_EXT_END      = 1.5;
 const T_CALL_START   = 0.9;
 const T_CALL_END     = 1.5;
-const T_CIPHER_START = 0.4;
+const T_CIPHER_START = 1.2;
 const T_GLITCH_START = 0.5;
-const T_SETTLE       = 3.6;
+const T_SETTLE       = 3.0;
 const LOGO_SCALE     = 0.90;
 
 const LOCK_TIMES: Record<string, number> = {
-  V: 2.3, X: 2.7, W: 2.9, O: 3.0, R: 3.1, K: 3.15, S: 3.2,
+  V: 1.9, X: 2.1, W: 2.2, O: 2.3, R: 2.35, K: 2.4, S: 2.5,
 };
 
 function prog(t: number, s: number, e: number) {
@@ -33,8 +33,8 @@ interface GlitchPt {
   size: number; opacity: number; maxLife: number; life: number; rot: number;
 }
 
-// Animation settles at 3.6s, then 2.4s dwell, then curtain up in 0.55s
-const CURTAIN_DELAY = 6000;
+// Animation settles at 3.0s, then 2.0s dwell, then curtain up in 0.55s
+const CURTAIN_DELAY = 5000;
 const CURTAIN_DUR   = 550;
 
 export default function Loader() {
