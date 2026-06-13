@@ -247,6 +247,15 @@ html.theme-transitioning *:not(canvas) {
   .marquee-track { animation: none !important; }
 }
 
+/* ─── Section 3 background grid drift ──────────────────────────────── */
+@keyframes gridDrift {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 60px 60px, 60px 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grid-drift { animation: none !important; }
+}
+
 /* ─── Scroll spline — desktop only ─────────────────────────────────── */
 .scroll-spline {
   display: none;
