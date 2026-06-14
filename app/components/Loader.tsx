@@ -394,6 +394,7 @@ export default function Loader() {
 
     const t1 = setTimeout(() => setPhase('curtain'), CURTAIN_DELAY);
     const t2 = setTimeout(() => {
+      window.scrollTo(0, 0);
       unlockScroll();
       setPhase('done');
       markDone();
