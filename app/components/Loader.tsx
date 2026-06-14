@@ -359,7 +359,11 @@ export default function Loader() {
     const isDev = process.env.NODE_ENV !== 'production';
     const SKIP_KEY = 'vx:bp';
 
+    document.body.style.overflow = 'hidden';
+    const unlock = () => { document.body.style.overflow = ''; };
+
     if (!isDev && sessionStorage.getItem(SKIP_KEY)) {
+      unlock();
       setPhase('done');
       markDone();
       return;
@@ -367,6 +371,7 @@ export default function Loader() {
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) {
+      unlock();
       setPhase('done');
       markDone();
       if (!isDev) sessionStorage.setItem(SKIP_KEY, '1');
@@ -375,12 +380,13 @@ export default function Loader() {
 
     const t1 = setTimeout(() => setPhase('curtain'), CURTAIN_DELAY);
     const t2 = setTimeout(() => {
+      unlock();
       setPhase('done');
       markDone();
       if (!isDev) sessionStorage.setItem(SKIP_KEY, '1');
     }, CURTAIN_DELAY + CURTAIN_DUR + 80);
 
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); clearTimeout(t2); unlock(); };
   }, [markDone]);
 
   if (phase === 'done') return null;
