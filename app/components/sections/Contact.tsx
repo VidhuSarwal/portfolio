@@ -1,26 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-
-const EMAIL = 'vidhu.sarwal19@gmail.com';
+import { useEffect, useRef } from 'react';
+import SignalPong from '@/app/components/SignalPong';
 
 export default function Contact() {
-  const [copied, setCopied] = useState(false);
-  const sectionRef  = useRef<HTMLElement>(null);
-  const headingRef  = useRef<HTMLHeadingElement>(null);
-  const bodyRef     = useRef<HTMLDivElement>(null);
-  const linksRef    = useRef<HTMLUListElement>(null);
-
-  async function copyEmail(e: React.MouseEvent) {
-    e.preventDefault();
-    try {
-      await navigator.clipboard.writeText(EMAIL);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      window.location.href = `mailto:${EMAIL}`;
-    }
-  }
+  const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const bodyRef    = useRef<HTMLDivElement>(null);
+  const linksRef   = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -69,13 +56,16 @@ export default function Contact() {
         borderTop: '1px solid var(--border-rest)',
       }}
     >
-      <div className="content-grid">
-        <div className="col-span-12 lg:col-span-9">
+      <div
+        className="content-grid"
+        style={{ alignItems: 'flex-start' }}
+      >
+        {/* ── Left column: contact info ──────────────────────────────── */}
+        <div className="col-span-12 lg:col-span-5">
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
             06 / CONTACT
           </p>
 
-          {/* Giant heading — anchor the section visually */}
           <h2
             ref={headingRef}
             id="contact-heading"
@@ -112,48 +102,6 @@ export default function Contact() {
             ref={linksRef}
             style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {/* Email — click to copy */}
-            <li>
-              <button
-                onClick={copyEmail}
-                aria-label={copied ? 'Email copied!' : `Copy ${EMAIL} to clipboard`}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  color: 'var(--text-primary)',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
-              >
-                <span
-                  className="text-body"
-                  style={{ fontSize: 'clamp(16px, 1.4vw, 22px)', letterSpacing: '-0.01em' }}
-                >
-                  {EMAIL}
-                </span>
-                <span
-                  className="text-mono"
-                  style={{
-                    color: copied ? 'var(--accent)' : 'var(--text-tertiary)',
-                    transition: 'color 0.2s, opacity 0.2s',
-                    opacity: copied ? 1 : 0.6,
-                    fontSize: '10px',
-                    letterSpacing: '0.16em',
-                  }}
-                >
-                  {copied ? '✓ COPIED' : 'CLICK TO COPY'}
-                </span>
-              </button>
-            </li>
-
-            <li style={{ height: '1px', background: 'var(--border-rest)', maxWidth: '480px' }} />
-
             <li>
               <a
                 href="https://github.com/VidhuSarwal"
@@ -199,29 +147,13 @@ export default function Contact() {
             </li>
           </ul>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          marginTop: 'clamp(80px, 12vh, 120px)',
-          borderTop: '1px solid var(--border-rest)',
-          paddingTop: '28px',
-        }}
-      >
-        <div className="content-grid">
-          <div
-            className="col-span-12 text-mono"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              color: 'var(--text-tertiary)',
-            }}
-          >
-            <span>© 2026 VIDHU SARWAL</span>
-            <span>VIDHUX.DEV</span>
-          </div>
+        {/* ── Right column: SignalPong ───────────────────────────────── */}
+        <div
+          className="col-span-12 lg:col-span-7"
+          style={{ height: 'clamp(340px, 48vh, 520px)' }}
+        >
+          <SignalPong />
         </div>
       </div>
     </section>

@@ -8,6 +8,7 @@ import Experience from '@/app/components/sections/Experience';
 import StatsBridge from '@/app/components/sections/StatsBridge';
 import TechStack from '@/app/components/sections/TechStack';
 import Contact from '@/app/components/sections/Contact';
+import VXFooter from '@/app/components/sections/VXFooter';
 
 export default function Home() {
   return (
@@ -28,6 +29,7 @@ export default function Home() {
         <StatsBridge />
         <TechStack />
         <Contact />
+        <VXFooter />
       </main>
     </>
   );
