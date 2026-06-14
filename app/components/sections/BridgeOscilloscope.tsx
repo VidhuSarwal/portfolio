@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
 
 // ── Math ──────────────────────────────────────────────────────────────────────
 function c01(t: number) { return Math.max(0, Math.min(1, t)); }
@@ -1289,6 +1290,7 @@ function WordReveal({ visible }: { visible: boolean }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function BridgeOscilloscope() {
+  const isMobile   = useIsMobile();
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const progRef    = useRef(0);
@@ -1453,7 +1455,7 @@ export default function BridgeOscilloscope() {
       id="transition"
       ref={sectionRef}
       aria-labelledby="bridge-heading"
-      style={{ position: 'relative', height: '850vh', borderTop: '1px solid var(--border-rest)', overflowX: 'clip' }}
+      style={{ position: 'relative', height: isMobile ? '500vh' : '850vh', borderTop: '1px solid var(--border-rest)', overflowX: 'clip' }}
     >
       {/* Sticky viewport */}
       <div style={{
@@ -1479,12 +1481,12 @@ export default function BridgeOscilloscope() {
         {/* Framed canvas box — starts at 1.35× scale, shrinks to 1× during pin */}
         <div ref={boxRef} style={{
           position: 'relative',
-          width: 'clamp(560px, 88vw, 1320px)',
-          height: 'clamp(320px, 62vh, 640px)',
+          width: isMobile ? 'calc(100vw - clamp(40px, 10vw, 64px))' : 'clamp(560px, 88vw, 1320px)',
+          height: isMobile ? 'clamp(190px, 52vw, 260px)' : 'clamp(320px, 62vh, 640px)',
           border: '1px solid var(--border-rest)',
           background: 'var(--bg-base)',
           flexShrink: 0,
-          transform: 'scale(1.35)',
+          transform: isMobile ? 'none' : 'scale(1.35)',
           transformOrigin: 'center 30%',
           willChange: 'transform',
         }}>
@@ -1531,7 +1533,7 @@ export default function BridgeOscilloscope() {
         </div>
 
         {/* Word reveal — below the box */}
-        <div style={{ width: 'clamp(560px, 88vw, 1320px)', zIndex: 2 }}>
+        <div style={{ width: isMobile ? 'calc(100vw - clamp(40px, 10vw, 64px))' : 'clamp(560px, 88vw, 1320px)', zIndex: 2 }}>
           <h2 id="bridge-heading" className="sr-only">Infra meets Intelligence</h2>
           <WordReveal visible={wordsVisible} />
         </div>
