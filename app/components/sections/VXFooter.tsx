@@ -16,7 +16,7 @@ const CELL_W   = 10;
 const CELL_H   = 12;
 const BG       = '#080808';   // matches --bg-base dark
 const ALPHA_IN  = 1.00;       // inside text — full white for maximum contrast
-const ALPHA_OUT = 0.04;       // outside text
+const ALPHA_OUT = 0.12;       // outside text
 
 // Phase timings (ms)
 const P1_LEN   = 400;   // noise
