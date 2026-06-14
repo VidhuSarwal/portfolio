@@ -1,44 +1,55 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import SignalPong from '@/app/components/SignalPong';
 
-const EMAIL = 'vidhu.sarwal19@gmail.com';
+const MAILTO = 'mailto:vidhu.sarwal19@gmail.com';
 
 const SOMETHING_VARIANTS = ['something.', 'something real.', 'something fast.', 'something lasting.', 'something strange.'];
-const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#@$%&?·—';
+const MAX_LEN = Math.max(...SOMETHING_VARIANTS.map(v => v.length));
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#@$%&?';
 
 function useCyclingScramble(variants: string[]) {
   const [display, setDisplay] = useState(variants[0]);
-  const idxRef  = useRef(0);
-  const rafRef  = useRef(0);
-  const tmrRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const idxRef = useRef(0);
+  const rafRef = useRef(0);
+  const tmrRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     function scrambleTo(target: string) {
-      const start = performance.now();
-      const DURATION = 420;
+      cancelAnimationFrame(rafRef.current);
+      const start    = performance.now();
+      const DURATION = 500;
       function tick() {
         const t = Math.min(1, (performance.now() - start) / DURATION);
-        const str = target.split('').map((ch, ci) => {
-          if (ch === ' ' || ch === '.') return ch;
-          if (t >= (ci + 1) / target.length) return ch;
-          if (t >  ci / target.length) return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
-          return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+        // Resolve left-to-right; unresolved chars show placeholder '·'
+        const str = Array.from({ length: MAX_LEN }, (_, ci) => {
+          const tch = target[ci] ?? '';
+          if (!tch) return ' '; // nbsp keeps width stable
+          if (tch === ' ' || tch === '.') return tch;
+          const resolveAt = (ci + 1) / target.length;
+          const scrambleAt = ci / target.length;
+          if (t >= resolveAt)   return tch;
+          if (t >= scrambleAt)  return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+          return '·';
         }).join('');
         setDisplay(str);
         if (t < 1) rafRef.current = requestAnimationFrame(tick);
-        else setDisplay(target);
+        else setDisplay(target.padEnd(MAX_LEN, ' '));
       }
       rafRef.current = requestAnimationFrame(tick);
     }
 
+    // Initialise display padded to max width so element never shrinks
+    setDisplay(variants[0].padEnd(MAX_LEN, ' '));
+
     function cycle() {
       idxRef.current = (idxRef.current + 1) % variants.length;
       scrambleTo(variants[idxRef.current]);
-      tmrRef.current = setTimeout(cycle, 4200);
+      tmrRef.current = setTimeout(cycle, 4500);
     }
 
-    tmrRef.current = setTimeout(cycle, 3800);
+    tmrRef.current = setTimeout(cycle, 4000);
     return () => {
       clearTimeout(tmrRef.current);
       cancelAnimationFrame(rafRef.current);
@@ -59,11 +70,11 @@ export default function Contact() {
   async function copyEmail(e: React.MouseEvent) {
     e.preventDefault();
     try {
-      await navigator.clipboard.writeText(EMAIL);
+      await navigator.clipboard.writeText('vidhu.sarwal19@gmail.com');
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      window.location.href = `mailto:${EMAIL}`;
+      window.location.href = MAILTO;
     }
   }
 
@@ -115,12 +126,12 @@ export default function Contact() {
       }}
     >
       <div className="content-grid">
-        <div className="col-span-12 lg:col-span-9">
+        {/* ── Left: text content ── */}
+        <div className="col-span-12 lg:col-span-6">
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
             06 / CONTACT
           </p>
 
-          {/* Giant heading — anchor the section visually */}
           <h2
             ref={headingRef}
             id="contact-heading"
@@ -138,9 +149,10 @@ export default function Contact() {
             <span
               style={{
                 color: 'var(--text-secondary)',
-                fontVariantNumeric: 'tabular-nums',
+                fontFamily: 'var(--font-jetbrains), monospace',
                 display: 'inline-block',
-                minWidth: '6ch',
+                whiteSpace: 'pre',
+                letterSpacing: '-0.02em',
               }}
             >{somethingDisplay}</span>
           </h2>
@@ -164,11 +176,11 @@ export default function Contact() {
             ref={linksRef}
             style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {/* Email — click to copy */}
+            {/* Email — click to copy, address hidden */}
             <li>
               <button
                 onClick={copyEmail}
-                aria-label={copied ? 'Email copied!' : `Copy ${EMAIL} to clipboard`}
+                aria-label={copied ? 'Email copied!' : 'Copy email to clipboard'}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -183,11 +195,8 @@ export default function Contact() {
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
               >
-                <span
-                  className="text-body"
-                  style={{ fontSize: 'clamp(16px, 1.4vw, 22px)', letterSpacing: '-0.01em' }}
-                >
-                  {EMAIL}
+                <span className="text-body" style={{ fontSize: 'clamp(16px, 1.4vw, 22px)', letterSpacing: '-0.01em' }}>
+                  EMAIL
                 </span>
                 <span
                   className="text-mono"
@@ -212,14 +221,7 @@ export default function Contact() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-body"
-                style={{
-                  color: 'var(--text-secondary)',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                }}
+                style={{ color: 'var(--text-secondary)', textDecoration: 'none', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '10px' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-primary)'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-secondary)'; }}
               >
@@ -234,14 +236,7 @@ export default function Contact() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-body"
-                style={{
-                  color: 'var(--text-secondary)',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                }}
+                style={{ color: 'var(--text-secondary)', textDecoration: 'none', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '10px' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-primary)'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-secondary)'; }}
               >
@@ -251,28 +246,14 @@ export default function Contact() {
             </li>
           </ul>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          marginTop: 'clamp(80px, 12vh, 120px)',
-          borderTop: '1px solid var(--border-rest)',
-          paddingTop: '28px',
-        }}
-      >
-        <div className="content-grid">
-          <div
-            className="col-span-12 text-mono"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              color: 'var(--text-tertiary)',
-            }}
-          >
-            <span>© 2026 VIDHU SARWAL</span>
-            <span>VIDHUX.DEV</span>
+        {/* ── Right: SignalPong — desktop only ── */}
+        <div
+          className="col-span-12 lg:col-span-6"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}
+        >
+          <div style={{ width: '100%', maxWidth: '420px', aspectRatio: '4 / 3' }}>
+            <SignalPong />
           </div>
         </div>
       </div>
