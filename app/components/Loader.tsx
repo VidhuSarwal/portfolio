@@ -359,11 +359,25 @@ export default function Loader() {
     const isDev = process.env.NODE_ENV !== 'production';
     const SKIP_KEY = 'vx:bp';
 
-    document.body.style.overflow = 'hidden';
-    const unlock = () => { document.body.style.overflow = ''; };
+    const SCROLL_KEYS = new Set(['Space','PageUp','PageDown','End','Home','ArrowUp','ArrowDown']);
+    const blockWheel = (e: Event) => e.preventDefault();
+    const blockKeys  = (e: KeyboardEvent) => { if (SCROLL_KEYS.has(e.code)) e.preventDefault(); };
+
+    function lockScroll()   {
+      window.addEventListener('wheel',     blockWheel, { passive: false });
+      window.addEventListener('touchmove', blockWheel, { passive: false });
+      window.addEventListener('keydown',   blockKeys);
+    }
+    function unlockScroll() {
+      window.removeEventListener('wheel',     blockWheel);
+      window.removeEventListener('touchmove', blockWheel);
+      window.removeEventListener('keydown',   blockKeys);
+    }
+
+    lockScroll();
 
     if (!isDev && sessionStorage.getItem(SKIP_KEY)) {
-      unlock();
+      unlockScroll();
       setPhase('done');
       markDone();
       return;
@@ -371,7 +385,7 @@ export default function Loader() {
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) {
-      unlock();
+      unlockScroll();
       setPhase('done');
       markDone();
       if (!isDev) sessionStorage.setItem(SKIP_KEY, '1');
@@ -380,13 +394,13 @@ export default function Loader() {
 
     const t1 = setTimeout(() => setPhase('curtain'), CURTAIN_DELAY);
     const t2 = setTimeout(() => {
-      unlock();
+      unlockScroll();
       setPhase('done');
       markDone();
       if (!isDev) sessionStorage.setItem(SKIP_KEY, '1');
     }, CURTAIN_DELAY + CURTAIN_DUR + 80);
 
-    return () => { clearTimeout(t1); clearTimeout(t2); unlock(); };
+    return () => { clearTimeout(t1); clearTimeout(t2); unlockScroll(); };
   }, [markDone]);
 
   if (phase === 'done') return null;
