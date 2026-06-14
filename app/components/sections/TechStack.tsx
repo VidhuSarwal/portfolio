@@ -219,7 +219,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
     reducedRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  // ── IntersectionObserver + entrance sequence (every scroll-in) ───────────────
+  // ── IntersectionObserver + entrance sequence (once only) ────────────────────
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -240,11 +240,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
       inViewRef.current = e.isIntersecting;
       if (e.isIntersecting) {
         startEntrance();
-      } else {
-        entTimers.current.forEach(clearTimeout);
-        setEntPhase(0);
-        signalsOn.current = false;
-        pulsesRef.current = [];
+        obs.disconnect();
       }
     }, { threshold: 0.15 });
 
