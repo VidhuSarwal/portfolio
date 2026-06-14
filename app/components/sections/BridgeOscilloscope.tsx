@@ -1336,13 +1336,18 @@ function WordReveal({ visible }: { visible: boolean }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+// Max animation advance per frame — caps how fast the build can play regardless of scroll speed.
+// 1/600 ≈ 0.00167 → full 0→1 traverse in ≥600 frames (~10s at 60fps).
+const MAX_PROG_DELTA = 1 / 600;
+
 export default function BridgeOscilloscope() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const progRef    = useRef(0);
-  const animId     = useRef(0);
-  const reduced    = useRef(false);
-  const boxRef     = useRef<HTMLDivElement>(null);
+  const sectionRef  = useRef<HTMLElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const targetProg  = useRef(0);  // raw scroll-driven progress
+  const displayProg = useRef(0);  // rate-limited, used for drawing
+  const animId      = useRef(0);
+  const reduced     = useRef(false);
+  const boxRef      = useRef<HTMLDivElement>(null);
   const [wordsVisible, setWordsVisible] = useState(false);
 
   useEffect(() => {
@@ -1357,7 +1362,8 @@ export default function BridgeOscilloscope() {
       const dpr = window.devicePixelRatio || 1;
       canvas!.width  = Math.round(canvas!.offsetWidth  * dpr);
       canvas!.height = Math.round(canvas!.offsetHeight * dpr);
-      ctx!.scale(dpr, dpr);
+      // setTransform resets any accumulated scale before applying DPR
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     const ro = new ResizeObserver(resize);
     ro.observe(canvas); resize();
@@ -1365,16 +1371,8 @@ export default function BridgeOscilloscope() {
     function onScroll() {
       const rect = section!.getBoundingClientRect();
       const scrollable = section!.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) { progRef.current = 0; return; }
-      progRef.current = c01(-rect.top / scrollable);
-      // Pin: drive canvas scale 1.35→1.0 as bridge finishes (76–88% of scroll)
-      if (boxRef.current && !reduced.current) {
-        const pinP  = c01((progRef.current - 0.76) / (0.88 - 0.76));
-        const scale = lerp(1.35, 1.00, eio(pinP));
-        boxRef.current.style.transform = `scale(${scale})`;
-      }
-      // Toggle words reveal — bidirectional so scrolling back hides them
-      setWordsVisible(progRef.current > 0.88);
+      if (scrollable <= 0) { targetProg.current = 0; return; }
+      targetProg.current = c01(-rect.top / scrollable);
     }
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
@@ -1391,7 +1389,28 @@ export default function BridgeOscilloscope() {
       if (w === 0 || h === 0) return;
       ctx!.clearRect(0, 0, w, h);
 
-      const prog = reduced.current ? 1 : progRef.current;
+      // Advance displayProg toward targetProg at a max rate — fast scroll can't skip scenes
+      if (!reduced.current) {
+        const diff  = targetProg.current - displayProg.current;
+        const delta = Math.sign(diff) * Math.min(Math.abs(diff), MAX_PROG_DELTA);
+        displayProg.current += delta;
+      } else {
+        displayProg.current = 1;
+      }
+
+      const prog = displayProg.current;
+
+      // Pin: drive canvas scale 1.35→1.0 as bridge finishes (76–88% of scroll)
+      if (boxRef.current && !reduced.current) {
+        const pinP  = c01((prog - 0.76) / (0.88 - 0.76));
+        const scale = lerp(1.35, 1.00, eio(pinP));
+        boxRef.current.style.transform = `scale(${scale})`;
+      }
+
+      // Toggle words reveal — bidirectional so scrolling back hides them
+      const wv = prog > 0.88;
+      setWordsVisible(prev => prev === wv ? prev : wv);
+
       // Bridge builds during 0–76% of scroll; 76–88% = pin shrink; 88–100% = signal
       const bridgeProg = reduced.current ? 1 : c01(prog / 0.76);
 
