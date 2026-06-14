@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 
-// ─── Curated vocabulary — 1–2 chars preferred, 3 max, no overflow at CELL_W=10 ─
+// ─── Curated vocabulary — single chars and tight 2-char symbols only ─────────
 const TOKENS: readonly string[] = [
-  '[]', '{}', '()', '<>', '||', '==', '!=', '&&', '::', '..', '--',
-  '=>', '->', '0x', '_', 'C', '0', '1',
-  'SYS', 'API', 'ETH', 'RAM', 'CPU', 'ENV', 'PTR', 'LOG',
-  'GIT', 'AST', 'RAG', 'HAL', 'SDK', 'I2C', 'SPI',
+  '[', ']', '{', '}', '(', ')', '<', '>',
+  '|', '=', '+', '-', '*', '/', ':', '.', '_', '~', '#', '@', '&', '^',
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  '||', '::', '..', '->', '=>', '[]', '{}', '()', '<>',
 ];
 
 const FONT_PX  = 8;
