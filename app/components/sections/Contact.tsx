@@ -4,9 +4,54 @@ import { useEffect, useRef, useState } from 'react';
 
 const EMAIL = 'vidhu.sarwal19@gmail.com';
 
+const SOMETHING_VARIANTS = ['something.', 'something real.', 'something fast.', 'something lasting.', 'something strange.'];
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#@$%&?·—';
+
+function useCyclingScramble(variants: string[]) {
+  const [display, setDisplay] = useState(variants[0]);
+  const idxRef  = useRef(0);
+  const rafRef  = useRef(0);
+  const tmrRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    function scrambleTo(target: string) {
+      const start = performance.now();
+      const DURATION = 420;
+      function tick() {
+        const t = Math.min(1, (performance.now() - start) / DURATION);
+        const str = target.split('').map((ch, ci) => {
+          if (ch === ' ' || ch === '.') return ch;
+          if (t >= (ci + 1) / target.length) return ch;
+          if (t >  ci / target.length) return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+          return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+        }).join('');
+        setDisplay(str);
+        if (t < 1) rafRef.current = requestAnimationFrame(tick);
+        else setDisplay(target);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    function cycle() {
+      idxRef.current = (idxRef.current + 1) % variants.length;
+      scrambleTo(variants[idxRef.current]);
+      tmrRef.current = setTimeout(cycle, 4200);
+    }
+
+    tmrRef.current = setTimeout(cycle, 3800);
+    return () => {
+      clearTimeout(tmrRef.current);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [variants]);
+
+  return display;
+}
+
 export default function Contact() {
   const [copied, setCopied] = useState(false);
   const sectionRef  = useRef<HTMLElement>(null);
+  const somethingDisplay = useCyclingScramble(SOMETHING_VARIANTS);
   const headingRef  = useRef<HTMLHeadingElement>(null);
   const bodyRef     = useRef<HTMLDivElement>(null);
   const linksRef    = useRef<HTMLUListElement>(null);
@@ -90,7 +135,14 @@ export default function Contact() {
             }}
           >
             Let&apos;s build<br />
-            <span style={{ color: 'var(--text-secondary)' }}>something.</span>
+            <span
+              style={{
+                color: 'var(--text-secondary)',
+                fontVariantNumeric: 'tabular-nums',
+                display: 'inline-block',
+                minWidth: '6ch',
+              }}
+            >{somethingDisplay}</span>
           </h2>
 
           <div ref={bodyRef}>

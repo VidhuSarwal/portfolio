@@ -17,15 +17,44 @@ const FREEZE_START = 0.08; // 8% — approach buffer, kills diagonal feel
 const FREEZE_END   = 0.14; // 14% — hold last card before section exits
 
 export default function Experience() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const trackRef   = useRef<HTMLDivElement>(null);
-  const lineRef    = useRef<SVGLineElement>(null);
-  const pulseRef   = useRef<HTMLDivElement>(null);
+  const sectionRef    = useRef<HTMLElement>(null);
+  const trackRef      = useRef<HTMLDivElement>(null);
+  const lineRef       = useRef<SVGLineElement>(null);
+  const pulseRef      = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [flareIdx,  setFlareIdx]  = useState(-1);
+
+  // Spring overshoot state — composited on top of scroll-driven dashoffset
+  const overshootRef    = useRef(0);   // current extra offset (px, positive = line drawn past target)
+  const overshootVelRef = useRef(0);
+  const overshootRafRef = useRef(0);
+  const progRef         = useRef(0);
+  const lineLenRef      = useRef(0);
 
   const visible = experiences.filter(
     (e) => e.configKey === null || siteConfig[e.configKey]
   );
+
+  // Spring loop — runs only when there is overshoot
+  function tickSpring() {
+    const K = 0.18, D = 0.72;
+    const f = K * (0 - overshootRef.current);
+    overshootVelRef.current = overshootVelRef.current * D + f;
+    overshootRef.current   += overshootVelRef.current;
+
+    if (lineRef.current && lineLenRef.current) {
+      const base   = lineLenRef.current * (1 - progRef.current);
+      const offset = Math.max(0, base - overshootRef.current);
+      lineRef.current.style.strokeDashoffset = String(offset);
+    }
+
+    if (Math.abs(overshootRef.current) > 0.5 || Math.abs(overshootVelRef.current) > 0.5) {
+      overshootRafRef.current = requestAnimationFrame(tickSpring);
+    } else {
+      overshootRef.current    = 0;
+      overshootVelRef.current = 0;
+    }
+  }
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -37,13 +66,13 @@ export default function Experience() {
 
     const count = visible.length;
     let lastIdx = -1;
-    let lineLen = 0;
 
     // Prime the SVG line
     if (lineRef.current) {
-      lineLen = lineRef.current.getTotalLength?.() ?? 2400;
-      lineRef.current.style.strokeDasharray  = String(lineLen);
-      lineRef.current.style.strokeDashoffset = String(lineLen);
+      const len = lineRef.current.getTotalLength?.() ?? 2400;
+      lineLenRef.current = len;
+      lineRef.current.style.strokeDasharray  = String(len);
+      lineRef.current.style.strokeDashoffset = String(len);
     }
 
     function onScroll() {
@@ -55,13 +84,14 @@ export default function Experience() {
       const prog = Math.max(0, Math.min(1,
         (raw - FREEZE_START) / (1 - FREEZE_START - FREEZE_END)
       ));
+      progRef.current = prog;
 
       const maxX = track!.scrollWidth - window.innerWidth;
       track!.style.transform = `translateX(${-maxX * prog}px)`;
 
-      if (lineRef.current) {
-        if (!lineLen) lineLen = lineRef.current.getTotalLength?.() ?? 2400;
-        lineRef.current.style.strokeDashoffset = String(lineLen * (1 - prog));
+      // Line offset: base from scroll + spring overshoot (spring owns update when active)
+      if (lineRef.current && lineLenRef.current && overshootRef.current === 0) {
+        lineRef.current.style.strokeDashoffset = String(lineLenRef.current * (1 - prog));
       }
 
       if (pulseRef.current) {
@@ -72,14 +102,27 @@ export default function Experience() {
       if (newIdx !== lastIdx) {
         lastIdx = newIdx;
         setActiveIdx(newIdx);
+
+        // Node flare
+        setFlareIdx(newIdx);
+        setTimeout(() => setFlareIdx(-1), 500);
+
+        // Spring overshoot: inject forward momentum
+        cancelAnimationFrame(overshootRafRef.current);
+        const overshootPx = lineLenRef.current * 0.06;
+        overshootRef.current    = overshootPx;
+        overshootVelRef.current = overshootPx * 0.12;
+        overshootRafRef.current = requestAnimationFrame(tickSpring);
       }
     }
 
-    // Run once on mount in case section is already in view
     onScroll();
-
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(overshootRafRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible.length]);
 
   const hPad = 'clamp(24px, 5.5vw, 72px)';
@@ -102,21 +145,33 @@ export default function Experience() {
       {/* ── Sticky viewport holder ──────────────────────────────────────────── */}
       <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
 
-        {/* ── State label — stays in viewport corner throughout ─────────────── */}
+        {/* ── State label — large watermark behind active card ─────────────── */}
         <div
           aria-live="polite"
           aria-atomic="true"
           style={{
             position: 'absolute',
-            top: vTop,
-            right: hPad,
-            zIndex: 10,
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             pointerEvents: 'none',
+            zIndex: 0,
+            overflow: 'hidden',
           }}
         >
           <p
-            className="text-mono"
-            style={{ color: 'var(--text-tertiary)', letterSpacing: '0.2em' }}
+            style={{
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: 'clamp(64px, 9vw, 140px)',
+              fontWeight: 700,
+              letterSpacing: '0.22em',
+              color: 'var(--text-primary)',
+              opacity: 0.04,
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+              transition: 'opacity 0.6s ease',
+            }}
           >
             {STATE_LABELS[visible[activeIdx]?.id] ?? ''}
           </p>
@@ -250,6 +305,7 @@ export default function Experience() {
           {/* ── Experience cards ───────────────────────────────────────────── */}
           {visible.map((exp, i) => {
             const isActive = i === activeIdx;
+            const isFlare  = i === flareIdx;
             // Split "Main Title — Sub context" into two visual levels
             const [mainTitle, subTitle] = exp.role.split(' — ');
 
@@ -366,6 +422,20 @@ export default function Experience() {
                     justifyContent: 'center',
                   }}
                 >
+                  {/* Flare ring — brief brightness burst on card change */}
+                  <div
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      width: isFlare ? '36px' : '0px',
+                      height: isFlare ? '36px' : '0px',
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle, rgba(200,228,255,0.35) 0%, transparent 70%)',
+                      opacity: isFlare ? 1 : 0,
+                      transition: 'width 0.08s ease-out, height 0.08s ease-out, opacity 0.45s ease',
+                      pointerEvents: 'none',
+                    }}
+                  />
                   <div
                     aria-hidden
                     style={{
@@ -383,8 +453,9 @@ export default function Experience() {
                       width: isActive ? '9px' : '6px',
                       height: isActive ? '9px' : '6px',
                       borderRadius: '50%',
-                      background: isActive ? 'var(--text-primary)' : 'var(--border-active)',
+                      background: isFlare ? 'rgba(200,228,255,0.9)' : (isActive ? 'var(--text-primary)' : 'var(--border-active)'),
                       transition: 'width 0.45s ease, height 0.45s ease, background 0.45s ease',
+                      boxShadow: isFlare ? '0 0 8px rgba(200,228,255,0.6)' : 'none',
                     }}
                   />
                 </div>

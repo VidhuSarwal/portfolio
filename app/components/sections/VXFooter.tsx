@@ -670,22 +670,28 @@ export default function VXFooter() {
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* Copyright + build metadata */}
         <div
           style={{
             marginTop: '28px',
             paddingTop: '20px',
             borderTop: '1px solid rgba(255,255,255,0.06)',
-            textAlign: 'center',
             fontFamily: 'var(--font-jetbrains), monospace',
             fontSize: '9px',
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
             color: 'var(--text-tertiary)',
             opacity: 0.45,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
           }}
         >
-          © 2026 Vidhu Sarwal — All rights reserved
+          <span>© 2026 Vidhu Sarwal</span>
+          <span style={{ opacity: 0.65 }}>VX·2026·06 / BUILD·001</span>
+          <span>All rights reserved</span>
         </div>
       </div>
     </div>

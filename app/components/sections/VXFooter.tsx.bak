@@ -1,0 +1,517 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
+
+// ─── Token pool: 1–3 chars only to avoid cell overflow at 7px ─────────────────
+const TOKENS: readonly string[] = [
+  '[]', '{}', '()', '<>', '||', '==', '!=', '&&', '::', '..', '--', '++',
+  'VX', 'C',  'PY', 'ML', 'OS', 'IO', 'FD', 'RX', 'TX', '0x',
+  'SYS', 'I2C', 'SPI', 'USB', 'IRQ', 'DMA', 'RAM', 'ROM', 'CPU',
+  'RAG', 'AST', 'GIT', 'LOG', 'API', 'SDK', 'HAL', 'BSP', 'ETH',
+  'NUL', 'EOF', 'ARG', 'ENV', 'PTR', 'REF',
+];
+
+const FONT_PX = 7;          // stream character size
+const CELL_W  = 10;         // cell width px
+const CELL_H  = 11;         // cell height px
+const BG      = '#080808';  // matches --bg-base dark
+const INSIDE  = 0.82;       // alpha for inside-text cells
+const OUTSIDE = 0.07;       // alpha for outside-text cells (still alive, not dark)
+
+const NAV_LINKS = [
+  { label: 'Hero',    href: '#hero' },
+  { label: 'About',   href: '#about' },
+  { label: 'Work',    href: '#work' },
+  { label: 'Skills',  href: '#skills' },
+  { label: 'SBC',     href: '#sbc-showcase' },
+  { label: 'Contact', href: '#contact' },
+] as const;
+
+const SOCIAL_LINKS = [
+  { label: 'GitHub',   href: 'https://github.com/VidhuSarwal' },
+  { label: 'LinkedIn', href: 'https://linkedin.com/in/vidhusarwal' },
+] as const;
+
+// ─── Style helpers ─────────────────────────────────────────────────────────────
+type LabelPos = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+function labelStyle(pos: LabelPos): CSSProperties {
+  const base: CSSProperties = {
+    position: 'absolute',
+    fontFamily: 'var(--font-jetbrains), monospace',
+    fontSize: '9px',
+    letterSpacing: '0.13em',
+    textTransform: 'uppercase',
+    color: 'var(--text-tertiary)',
+    opacity: 0.30,
+    lineHeight: 1,
+    pointerEvents: 'none',
+    userSelect: 'none',
+  };
+  const p = '18px';
+  switch (pos) {
+    case 'top-left':     return { ...base, top: p, left: p };
+    case 'top-right':    return { ...base, top: p, right: p };
+    case 'bottom-left':  return { ...base, bottom: p, left: p };
+    case 'bottom-right': return { ...base, bottom: p, right: p };
+  }
+}
+
+const linkBase: CSSProperties = {
+  fontFamily: 'var(--font-jetbrains), monospace',
+  fontSize: '10px',
+  letterSpacing: '0.14em',
+  color: 'var(--text-tertiary)',
+  textDecoration: 'none',
+  textTransform: 'uppercase',
+  transition: 'color 0.2s',
+};
+
+function onEnter(e: React.MouseEvent<HTMLAnchorElement>) {
+  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-secondary)';
+}
+function onLeave(e: React.MouseEvent<HTMLAnchorElement>) {
+  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-tertiary)';
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+export default function VXFooter() {
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [labelsVisible, setLabelsVisible] = useState(false);
+  const [isMobile, setIsMobile]           = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const h = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', h);
+    return () => mq.removeEventListener('change', h);
+  }, []);
+
+  useEffect(() => {
+    const canvas    = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ── Engine state ──────────────────────────────────────────────────────────
+    let W = 0, H = 0, animId = 0, lastTs = 0;
+    let numCols = 0, numRows = 0;
+
+    // Per-cell flat arrays (indexed row * numCols + col)
+    let cellChars  : string[]     = [];
+    let cellTimer  : Float32Array = new Float32Array(0);
+    let cellInText : Uint8Array   = new Uint8Array(0);
+    let cellFlash  : Float32Array = new Float32Array(0);
+
+    // Per-column arrays (for Phase-2 left→right reveal and flicker)
+    let revealDelay : Float32Array = new Float32Array(0);
+    let revealProg  : Float32Array = new Float32Array(0);
+    let colFlickerOn: Uint8Array   = new Uint8Array(0);
+    let colFlickerT : Float32Array = new Float32Array(0);
+
+    // phase: 0=idle 1=noise 2=emerge 3=lock 4=steady
+    let phase         = 0;
+    let phaseStart    = 0;
+    let resizeFast    = false;
+    let started       = false;
+    let nextFlickerAt = 0;
+    let hasSize = false, hasIntersected = false;
+
+    function pick() { return TOKENS[Math.floor(Math.random() * TOKENS.length)]; }
+
+    // ── Mask build ────────────────────────────────────────────────────────────
+    function buildMask(w: number, h: number) {
+      const mc = document.createElement('canvas');
+      mc.width = w; mc.height = h;
+      const mx = mc.getContext('2d')!;
+
+      // Scale font so "VX. Works" ≈ 77% canvas width
+      let fSz = 100;
+      mx.font = `800 ${fSz}px "JetBrains Mono", monospace`;
+      const raw = mx.measureText('VX. Works').width;
+      fSz = Math.floor(fSz * (w * 0.77) / Math.max(1, raw));
+      fSz = Math.max(20, Math.min(fSz, Math.floor(h * 0.60)));
+
+      mx.font = `800 ${fSz}px "JetBrains Mono", monospace`;
+      mx.fillStyle = '#fff';
+      mx.textAlign = 'center';
+      mx.textBaseline = 'middle';
+      mx.fillText('VX. Works', w / 2, h / 2);
+
+      const data = mx.getImageData(0, 0, w, h).data;
+
+      // Classify each cell by sampling its center pixel
+      for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+          const px = Math.min(Math.floor(col * CELL_W + CELL_W / 2), w - 1);
+          const py = Math.min(Math.floor(row * CELL_H + CELL_H / 2), h - 1);
+          cellInText[row * numCols + col] = data[(py * w + px) * 4 + 3] > 64 ? 1 : 0;
+        }
+      }
+    }
+
+    // ── Column/cell init ──────────────────────────────────────────────────────
+    function initGrid(w: number, h: number) {
+      numCols = Math.max(1, Math.floor(w / CELL_W));
+      numRows = Math.max(1, Math.floor(h / CELL_H));
+      const total = numCols * numRows;
+
+      cellChars   = Array.from({ length: total }, pick);
+      cellTimer   = new Float32Array(total);
+      cellInText  = new Uint8Array(total);
+      cellFlash   = new Float32Array(total);
+      revealDelay = new Float32Array(numCols);
+      revealProg  = new Float32Array(numCols);
+      colFlickerOn = new Uint8Array(numCols);
+      colFlickerT  = new Float32Array(numCols);
+
+      for (let i = 0; i < total; i++) {
+        cellTimer[i] = Math.random() * 120;
+      }
+      for (let col = 0; col < numCols; col++) {
+        // Left-to-right reveal, spread 0–800ms into Phase 2, ±80ms jitter
+        revealDelay[col] = (col / Math.max(1, numCols - 1)) * 800 +
+                           (Math.random() - 0.5) * 160;
+      }
+
+      buildMask(w, h);
+
+      // Rebuild mask after fonts confirmed loaded (prevents wrong-font classification)
+      if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+          if (W && H && numCols > 0) buildMask(W, H);
+        });
+      }
+    }
+
+    // ── Alpha per cell ────────────────────────────────────────────────────────
+    function cellAlpha(idx: number, col: number, phase2Elapsed: number): number {
+      const inside = cellInText[idx] === 1;
+
+      if (phase === 1) return 0.08;
+
+      if (phase === 2) {
+        if (!inside) return OUTSIDE;
+        const localT = Math.max(0, phase2Elapsed - revealDelay[col]);
+        revealProg[col] = Math.min(1, localT / 600);
+        return OUTSIDE + revealProg[col] * (INSIDE - OUTSIDE);
+      }
+
+      if (phase === 3 || phase === 4) {
+        let a = inside ? INSIDE : OUTSIDE;
+        if (inside && cellFlash[idx] > 0) a = a + (1.0 - a) * cellFlash[idx];
+        if (inside && colFlickerOn[col])  a = OUTSIDE;
+        return a;
+      }
+
+      return OUTSIDE;
+    }
+
+    // ── Packet-loss flicker ───────────────────────────────────────────────────
+    function tickFlicker(now: number, dt: number) {
+      if (phase < 4) return;
+
+      for (let col = 0; col < numCols; col++) {
+        if (colFlickerOn[col]) {
+          colFlickerT[col] -= dt * (1000 / 60);
+          if (colFlickerT[col] <= 0) colFlickerOn[col] = 0;
+        }
+      }
+
+      if (now < nextFlickerAt) return;
+
+      // Find inside-text columns not currently flickering
+      const pool: number[] = [];
+      for (let col = 0; col < numCols; col++) {
+        // Does this column have any inside cells?
+        let hasInside = false;
+        for (let row = 0; row < numRows; row++) {
+          if (cellInText[row * numCols + col]) { hasInside = true; break; }
+        }
+        if (hasInside && !colFlickerOn[col]) pool.push(col);
+      }
+
+      const count = 3 + Math.floor(Math.random() * 4);
+      for (let k = 0; k < count && pool.length; k++) {
+        const r   = Math.floor(Math.random() * pool.length);
+        const col = pool.splice(r, 1)[0];
+        colFlickerOn[col] = 1;
+        colFlickerT[col]  = 300 + Math.random() * 200;
+      }
+      nextFlickerAt = now + 4000 + Math.random() * 4000;
+    }
+
+    // ── rAF draw loop ─────────────────────────────────────────────────────────
+    function draw(ts: number) {
+      animId = requestAnimationFrame(draw);
+      if (!W || !H || !started || numCols === 0) return;
+      const ctx = canvas!.getContext('2d');
+      if (!ctx) return;
+
+      const dt      = lastTs > 0 ? Math.min((ts - lastTs) / (1000 / 60), 3) : 1;
+      lastTs        = ts;
+      const elapsed = ts - phaseStart;
+
+      // Phase transitions
+      if (phase === 1) {
+        const len = resizeFast ? 200 : 600;
+        if (elapsed >= len) {
+          if (resizeFast) {
+            resizeFast = false; phase = 4;
+            setLabelsVisible(true);
+          } else {
+            phase = 2; phaseStart = ts;
+          }
+        }
+      }
+      if (phase === 2 && elapsed >= 1200) {
+        phase = 3; phaseStart = ts;
+        const total = numCols * numRows;
+        for (let i = 0; i < total; i++) {
+          if (cellInText[i]) cellFlash[i] = 1.0;
+        }
+      }
+      if (phase === 3 && elapsed >= 400) {
+        phase = 4;
+        setLabelsVisible(true);
+      }
+
+      // Flash decay
+      if (phase >= 3) {
+        const total = numCols * numRows;
+        for (let i = 0; i < total; i++) {
+          if (cellFlash[i] > 0) cellFlash[i] = Math.max(0, cellFlash[i] - 0.025 * dt);
+        }
+      }
+
+      tickFlicker(ts, dt);
+
+      // ── Full redraw (no trail — static grid) ───────────────────────────
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.font         = `${FONT_PX}px "JetBrains Mono", monospace`;
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'top';
+
+      const p2e = phase === 2 ? elapsed : 0;
+
+      for (let row = 0; row < numRows; row++) {
+        const y = row * CELL_H;
+        for (let col = 0; col < numCols; col++) {
+          const idx = row * numCols + col;
+
+          // Slow character cycling — inside text refreshes faster for liveliness
+          cellTimer[idx] -= dt;
+          if (cellTimer[idx] <= 0) {
+            cellChars[idx] = pick();
+            cellTimer[idx] = cellInText[idx]
+              ? (80  + Math.random() * 120)
+              : (200 + Math.random() * 200);
+          }
+
+          const a = cellAlpha(idx, col, p2e);
+          if (a < 0.005) continue;
+
+          ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+          ctx.fillText(cellChars[idx], col * CELL_W, y);
+        }
+      }
+    }
+
+    // ── Reduced-motion: single static frame ───────────────────────────────────
+    function drawStatic() {
+      const ctx = canvas!.getContext('2d');
+      if (!ctx || !W || !H || numCols === 0) return;
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, W, H);
+      ctx.font         = `${FONT_PX}px "JetBrains Mono", monospace`;
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'top';
+      for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+          const idx = row * numCols + col;
+          const a   = cellInText[idx] ? INSIDE : OUTSIDE;
+          ctx.fillStyle = `rgba(255,255,255,${a})`;
+          ctx.fillText(cellChars[idx], col * CELL_W, row * CELL_H);
+        }
+      }
+      setLabelsVisible(true);
+    }
+
+    function maybeStatic() {
+      if (hasSize && hasIntersected && reduced) drawStatic();
+    }
+
+    // ── ResizeObserver ────────────────────────────────────────────────────────
+    const ro = new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1;
+      W = canvas!.offsetWidth;
+      H = canvas!.offsetHeight;
+      if (!W || !H) return;
+      canvas!.width  = Math.round(W * dpr);
+      canvas!.height = Math.round(H * dpr);
+      const ctx = canvas!.getContext('2d');
+      if (ctx) ctx.scale(dpr, dpr);
+      initGrid(W, H);
+      hasSize = true;
+      if (started && !reduced) {
+        phase      = 1;
+        phaseStart = performance.now();
+        resizeFast = true;
+        setLabelsVisible(false);
+      }
+      maybeStatic();
+    });
+    ro.observe(canvas);
+
+    // ── IntersectionObserver ──────────────────────────────────────────────────
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !started) {
+        started = true; hasIntersected = true;
+        if (reduced) {
+          maybeStatic();
+        } else {
+          phase         = 1;
+          phaseStart    = performance.now();
+          nextFlickerAt = phaseStart + 6000 + Math.random() * 2000;
+        }
+      }
+    }, { threshold: 0.1 });
+    io.observe(container);
+
+    if (!reduced) animId = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+      io.disconnect();
+    };
+  }, []);
+
+  return (
+    // Top margin creates space between Contact section content and footer canvas
+    <div ref={containerRef} style={{ background: 'var(--bg-base)', marginTop: 'clamp(60px, 8vh, 100px)' }}>
+
+      {/* ── Canvas ──────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 'clamp(220px, calc(186px + 10.7vw), 340px)',
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          aria-hidden="true"
+          style={{ width: '100%', height: '100%', display: 'block' }}
+        />
+
+        {/* Telemetry metadata overlay */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            opacity: labelsVisible ? 1 : 0,
+            transition: 'opacity 400ms ease',
+          }}
+        >
+          {!isMobile && <span style={labelStyle('top-left')}>Signal Complete</span>}
+          {!isMobile && <span style={labelStyle('top-right')}>End of Transmission</span>}
+          <span style={labelStyle('bottom-left')}>SYS · Nominal</span>
+          <span style={labelStyle('bottom-right')}>VX Network · Link Established</span>
+        </div>
+      </div>
+
+      {/* ── Footer bar ───────────────────────────────────────────────────── */}
+      <div style={{ padding: 'clamp(40px, 6vh, 64px) clamp(32px, 4vw, 64px) 32px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '32px',
+            flexWrap: 'wrap',
+          }}
+        >
+          {/* Logo */}
+          <div style={{ flexShrink: 0 }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-display), system-ui, sans-serif',
+                fontSize: '16px',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+              }}
+            >
+              VX. Works
+            </span>
+          </div>
+
+          {/* Section nav */}
+          <nav aria-label="Footer navigation">
+            <ul
+              style={{
+                listStyle: 'none',
+                display: 'flex',
+                gap: '24px',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+              }}
+            >
+              {NAV_LINKS.map(({ label, href }) => (
+                <li key={label}>
+                  <a href={href} style={linkBase} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Socials */}
+          <div style={{ display: 'flex', gap: '20px', flexShrink: 0 }}>
+            {SOCIAL_LINKS.map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={linkBase}
+                onMouseEnter={onEnter}
+                onMouseLeave={onLeave}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div
+          style={{
+            marginTop: '28px',
+            paddingTop: '20px',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            textAlign: 'center',
+            fontFamily: 'var(--font-jetbrains), monospace',
+            fontSize: '9px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--text-tertiary)',
+            opacity: 0.45,
+          }}
+        >
+          © 2026 Vidhu Sarwal — All rights reserved
+        </div>
+      </div>
+    </div>
+  );
+}

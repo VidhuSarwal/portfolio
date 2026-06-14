@@ -90,6 +90,83 @@ function ScrambleSpan({
   );
 }
 
+function ViewWorkCTA() {
+  const arrowCanvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef        = useRef(0);
+
+  function runTrace() {
+    const canvas = arrowCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    cancelAnimationFrame(animRef.current);
+    const W = canvas.width, H = canvas.height;
+    const start = performance.now();
+    const DURATION = 380;
+    function frame(ts: number) {
+      const t    = Math.min(1, (ts - start) / DURATION);
+      const ease = 1 - Math.pow(1 - t, 3);
+      ctx!.clearRect(0, 0, W, H);
+      const headX = ease * W;
+      const tailX = Math.max(0, headX - W * 0.55);
+      const y     = H / 2;
+      const grad  = ctx!.createLinearGradient(tailX, 0, headX, 0);
+      grad.addColorStop(0, 'rgba(200,228,255,0)');
+      grad.addColorStop(1, 'rgba(200,228,255,0.85)');
+      ctx!.beginPath();
+      ctx!.moveTo(tailX, y);
+      ctx!.lineTo(headX, y);
+      ctx!.strokeStyle = grad;
+      ctx!.lineWidth = 1.5;
+      ctx!.stroke();
+      if (t < 1) animRef.current = requestAnimationFrame(frame);
+    }
+    animRef.current = requestAnimationFrame(frame);
+  }
+
+  useEffect(() => () => cancelAnimationFrame(animRef.current), []);
+
+  return (
+    <a
+      href="#sbc-showcase"
+      data-label="[ VIEW WORK ]"
+      className="text-mono"
+      style={{
+        color: 'var(--text-primary)',
+        border: '1px solid var(--border-active)',
+        padding: '12px 24px',
+        textDecoration: 'none',
+        letterSpacing: '0.12em',
+        transition: 'border-color 0.2s, color 0.2s',
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        overflow: 'visible',
+      }}
+      onMouseEnter={runTrace}
+    >
+      <span>VIEW WORK</span>
+      <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+        →
+        <canvas
+          ref={arrowCanvasRef}
+          width={52}
+          height={14}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '100%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none',
+          }}
+        />
+      </span>
+    </a>
+  );
+}
+
 function UnmaskReveal({
   children,
   startDelay,
@@ -257,21 +334,7 @@ export default function Hero() {
 
                 <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <UnmaskReveal startDelay={CTA_START}>
-                    <a
-                      href="#sbc-showcase"
-                      data-label="[ VIEW WORK ]"
-                      className="text-mono"
-                      style={{
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-active)',
-                        padding: '12px 24px',
-                        textDecoration: 'none',
-                        letterSpacing: '0.12em',
-                        transition: 'border-color 0.2s, color 0.2s',
-                      }}
-                    >
-                      VIEW WORK →
-                    </a>
+                    <ViewWorkCTA />
                   </UnmaskReveal>
 
                   <UnmaskReveal startDelay={CTA_START + 120}>

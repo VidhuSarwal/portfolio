@@ -1155,19 +1155,22 @@ function drawCableTension(
 const WORDS = ['INFRA', '×', 'INTELLIGENCE'] as const;
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—/\\|';
 
+// phase: 'hidden' | 'reveal' (cipher in) | 'inline' (baseline row) | 'formula' (equation layout) | 'dissolve'
+type RevealPhase = 'hidden' | 'reveal' | 'inline' | 'formula' | 'dissolve';
+
 function WordReveal({ visible }: { visible: boolean }) {
   const [disp, setDisp] = useState<[string, string, string]>(() => [
     '·'.repeat(5),
     '×',
     '·'.repeat(12),
   ]);
-  const [xAccent, setXAccent] = useState(false);
+  const [xAccent,  setXAccent]  = useState(false);
+  const [phase,    setPhase]    = useState<RevealPhase>('hidden');
   const timers  = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rafs    = useRef<number[]>([]);
-  const shown   = useRef(false); // guards against running reverse on first mount
+  const shown   = useRef(false);
 
   useEffect(() => {
-    // Cancel any in-flight animations before starting new direction
     timers.current.forEach(clearTimeout);
     rafs.current.forEach(cancelAnimationFrame);
     timers.current = [];
@@ -1175,8 +1178,9 @@ function WordReveal({ visible }: { visible: boolean }) {
 
     if (visible) {
       shown.current = true;
+      setPhase('reveal');
 
-      // Forward: INFRA → × → INTELLIGENCE
+      // Forward cipher-in: INFRA → × → INTELLIGENCE
       const fwd = [
         { word: 'INFRA',        wi: 0 as const, delayMs: 0,   durationMs: 580 },
         { word: '×',            wi: 1 as const, delayMs: 300, durationMs: 0   },
@@ -1205,25 +1209,28 @@ function WordReveal({ visible }: { visible: boolean }) {
         }, delayMs);
       });
 
+      // After cipher-in completes (≈1500ms), transition to formula layout
+      timers.current[5] = setTimeout(() => setPhase('inline'),  1520);
+      timers.current[6] = setTimeout(() => setPhase('formula'), 2100);
+
     } else if (shown.current) {
-      // Reverse: INTELLIGENCE → × → INFRA (right-to-left dissolve, reverse stagger)
+      // Reverse: formula → inline → dissolve
+      setPhase('inline');
+      timers.current[5] = setTimeout(() => setPhase('dissolve'), 280);
+
       const rev = [
-        { word: 'INTELLIGENCE', wi: 2 as const, delayMs: 0,   durationMs: 600 },
-        { word: '×',            wi: 1 as const, delayMs: 200, durationMs: 0   },
-        { word: 'INFRA',        wi: 0 as const, delayMs: 320, durationMs: 380 },
+        { word: 'INTELLIGENCE', wi: 2 as const, delayMs: 300, durationMs: 600 },
+        { word: '×',            wi: 1 as const, delayMs: 500, durationMs: 0   },
+        { word: 'INFRA',        wi: 0 as const, delayMs: 620, durationMs: 380 },
       ];
       rev.forEach(({ word, wi, delayMs, durationMs }) => {
         timers.current[wi] = setTimeout(() => {
-          if (wi === 1) {
-            setXAccent(false);
-            return;
-          }
+          if (wi === 1) { setXAccent(false); return; }
           const letters = word.split('');
           const n = letters.length;
           const start = performance.now();
           const tick = () => {
             const t = Math.min(1, (performance.now() - start) / durationMs);
-            // Dissolve right-to-left: last char first
             const str = letters.map((ch, ci) => {
               const dissolveStart = (n - 1 - ci) / n;
               const dissolveEnd   = (n     - ci) / n;
@@ -1238,6 +1245,8 @@ function WordReveal({ visible }: { visible: boolean }) {
           rafs.current[wi] = requestAnimationFrame(tick);
         }, delayMs);
       });
+
+      timers.current[7] = setTimeout(() => setPhase('hidden'), 1100);
     }
 
     return () => {
@@ -1246,43 +1255,82 @@ function WordReveal({ visible }: { visible: boolean }) {
     };
   }, [visible]);
 
+  // ── Formula layout: INFRA left | × center | INTELLIGENCE right ──────────────
+  const isFormula  = phase === 'formula';
+  const isVisible  = phase !== 'hidden';
+  const showRule   = phase === 'formula' || phase === 'inline';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div style={{ position: 'relative' }}>
+      {/* Inline baseline row — always rendered, transforms position in formula mode */}
       <div
         aria-label="Infra meets Intelligence"
         style={{
           display: 'flex', flexWrap: 'wrap',
           gap: 'clamp(8px,1.2vw,20px)', alignItems: 'baseline',
-          opacity: visible ? 1 : 0,
+          opacity: isVisible ? 1 : 0,
           transition: 'opacity 0.08s ease',
         }}
       >
-        {WORDS.map((word, i) => (
-          <span key={i} style={{
-            display: 'inline-block',
-            fontFamily: 'var(--font-display), system-ui, sans-serif',
-            fontSize: word === '×' ? 'clamp(36px,5vw,72px)' : 'clamp(44px,6.5vw,96px)',
-            fontWeight: 700,
-            lineHeight: 0.95,
-            letterSpacing: '-0.02em',
-            fontVariantNumeric: 'tabular-nums',
-            color: (i === 1 && xAccent)
-              ? 'var(--accent)'
-              : (word === '×' ? 'var(--text-tertiary)' : 'var(--text-primary)'),
-            transition: i === 1 ? 'color 0.5s ease' : undefined,
-          }}>
-            {disp[i]}
-          </span>
-        ))}
+        <span style={{
+          display: 'inline-block',
+          fontFamily: 'var(--font-display), system-ui, sans-serif',
+          fontSize: 'clamp(44px,6.5vw,96px)',
+          fontWeight: 700,
+          lineHeight: 0.95,
+          letterSpacing: '-0.02em',
+          color: 'var(--text-primary)',
+          transform: isFormula ? 'translateX(-8px)' : 'none',
+          transition: 'transform 0.7s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease',
+        }}>{disp[0]}</span>
+
+        <span style={{
+          display: 'inline-block',
+          fontFamily: 'var(--font-display), system-ui, sans-serif',
+          fontSize: 'clamp(36px,5vw,72px)',
+          fontWeight: 700,
+          lineHeight: 0.95,
+          letterSpacing: '-0.02em',
+          color: xAccent ? 'var(--accent)' : 'var(--text-tertiary)',
+          transition: 'color 0.5s ease',
+        }}>{disp[1]}</span>
+
+        <span style={{
+          display: 'inline-block',
+          fontFamily: 'var(--font-display), system-ui, sans-serif',
+          fontSize: 'clamp(44px,6.5vw,96px)',
+          fontWeight: 700,
+          lineHeight: 0.95,
+          letterSpacing: '-0.02em',
+          color: 'var(--text-primary)',
+          transform: isFormula ? 'translateX(8px)' : 'none',
+          transition: 'transform 0.7s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease',
+        }}>{disp[2]}</span>
       </div>
-      {/* Sweep line drawn underneath as words resolve */}
+
+      {/* Formula rule — thin horizontal line, fades in once formula phase reached */}
       <div style={{
         height: '1px',
         background: 'var(--border-active)',
-        width: visible ? '100%' : '0%',
-        transition: visible ? 'width 1.5s cubic-bezier(0.16,1,0.3,1) 0.12s' : 'none',
+        width: showRule ? '100%' : '0%',
+        transition: showRule ? 'width 1.5s cubic-bezier(0.16,1,0.3,1) 0.12s' : 'width 0.3s ease',
         marginTop: 'clamp(10px,1.5vh,18px)',
+        opacity: isFormula ? 1 : 0.5,
       }} />
+
+      {/* Formula sub-labels — appear only in formula phase */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '8px',
+        opacity: isFormula ? 0.38 : 0,
+        transition: 'opacity 0.6s ease',
+        pointerEvents: 'none',
+      }}>
+        <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: '9px', letterSpacing: '0.18em', color: 'var(--text-secondary)' }}>INFRASTRUCTURE</span>
+        <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: '9px', letterSpacing: '0.18em', color: 'var(--text-secondary)' }}>OPERATOR</span>
+        <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: '9px', letterSpacing: '0.18em', color: 'var(--text-secondary)' }}>INTELLIGENCE</span>
+      </div>
     </div>
   );
 }

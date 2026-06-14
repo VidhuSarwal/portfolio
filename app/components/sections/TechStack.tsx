@@ -165,7 +165,7 @@ function NodeTooltip({ node, x, y, svgH, showSamsung }: {
 // Constellation
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Constellation({ onHoverChange }: { onHoverChange?: (label: string | null) => void }) {
+function Constellation({ onHoverChange }: { onHoverChange?: (label: string | null, connCount?: number) => void }) {
   const containerRef   = useRef<HTMLDivElement>(null);
   const innerGRefs     = useRef(new Map<string, SVGGElement>());
   const mouseRef       = useRef({ x: 0, y: 0 });
@@ -494,7 +494,8 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
   const handleEnter = useCallback((id: string) => {
     setHoveredId(id);
     const node = NODES.find(n => n.id === id);
-    onHoverChange?.(node?.label ?? null);
+    const connCount = ADJ.get(id)?.size ?? 0;
+    onHoverChange?.(node?.label ?? null, connCount);
   }, [onHoverChange]);
 
   const handleLeave = useCallback(() => {
@@ -597,15 +598,24 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
             </text>
           ))}
 
-          {/* Edges */}
+          {/* Edges — quadratic bezier with shallow arc (sagitta ≈ 7px) */}
           {EDGES.map((edge, i) => {
             const pa = positions.get(edge.a);
             const pb = positions.get(edge.b);
             if (!pa || !pb) return null;
+            const mx  = (pa.x + pb.x) / 2;
+            const my  = (pa.y + pb.y) / 2;
+            const ddx = pb.x - pa.x;
+            const ddy = pb.y - pa.y;
+            const len = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
+            const sag = 7;
+            const cx  = mx + (-ddy / len) * sag;
+            const cy  = my + (ddx / len) * sag;
             return (
-              <line
+              <path
                 key={`e${i}`}
-                x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+                d={`M ${pa.x} ${pa.y} Q ${cx} ${cy} ${pb.x} ${pb.y}`}
+                fill="none"
                 stroke={getEdgeStroke(edge)}
                 strokeWidth={getEdgeWidth(edge)}
                 vectorEffect="non-scaling-stroke"
@@ -781,7 +791,7 @@ function MobileStack() {
 
 export default function TechStack() {
   const [isMobile, setIsMobile]       = useState(false);
-  const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
+  const [hoveredInfo, setHoveredInfo] = useState<{ label: string; count: number } | null>(null);
 
   useEffect(() => {
     function check() { setIsMobile(window.innerWidth < 768); }
@@ -825,7 +835,9 @@ export default function TechStack() {
             className="text-mono"
             style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '8px', transition: 'opacity 200ms ease-out, color 200ms ease-out' }}
           >
-            {hoveredLabel ? `WORKING WITH ${hoveredLabel.toUpperCase()}` : 'HOVER TO EXPLORE'}
+            {hoveredInfo
+              ? `${hoveredInfo.label.toUpperCase()} · CONNECTED TO ${hoveredInfo.count} NODE${hoveredInfo.count !== 1 ? 'S' : ''}`
+              : 'HOVER TO EXPLORE'}
           </p>
         )}
       </div>
@@ -835,7 +847,9 @@ export default function TechStack() {
           <MobileStack />
         </div>
       ) : (
-        <Constellation onHoverChange={setHoveredLabel} />
+        <Constellation onHoverChange={(label, count) => {
+          setHoveredInfo(label ? { label, count: count ?? 0 } : null);
+        }} />
       )}
     </section>
   );
