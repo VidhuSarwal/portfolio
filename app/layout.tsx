@@ -24,11 +24,11 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Vidhu Sarwal — Systems Engineer',
+  title: 'VX Works',
   description:
     "Final-year CS undergrad. GSoC '25 at BeagleBoard.org. Samsung PRISM. Linux Kernel Mentorship Program.",
   openGraph: {
-    title: 'Vidhu Sarwal — Systems Engineer',
+    title: 'VX Works',
     description: 'Linux kernel · Distributed systems · AI infrastructure.',
     type: 'website',
   },
