@@ -58,10 +58,10 @@ export default function Contact() {
     >
       <div
         className="content-grid"
-        style={{ alignItems: 'flex-start' }}
+        style={{ alignItems: 'center' }}
       >
         {/* ── Left column: contact info ──────────────────────────────── */}
-        <div className="col-span-12 lg:col-span-5">
+        <div className="col-span-12 lg:col-span-6">
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
             06 / CONTACT
           </p>
@@ -71,7 +71,7 @@ export default function Contact() {
             id="contact-heading"
             style={{
               fontFamily: 'var(--font-display), system-ui, sans-serif',
-              fontSize: 'clamp(52px, 7.5vw, 120px)',
+              fontSize: 'clamp(44px, 6vw, 88px)',
               fontWeight: 700,
               lineHeight: 0.95,
               letterSpacing: '-0.025em',
@@ -150,7 +150,7 @@ export default function Contact() {
 
         {/* ── Right column: SignalPong ───────────────────────────────── */}
         <div
-          className="col-span-12 lg:col-span-7"
+          className="col-span-12 lg:col-span-6"
           style={{ height: 'clamp(340px, 48vh, 520px)' }}
         >
           <SignalPong />
