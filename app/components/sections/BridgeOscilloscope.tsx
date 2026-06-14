@@ -1367,7 +1367,9 @@ export default function BridgeOscilloscope() {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas); resize();
 
-    // IntersectionObserver: lock Lenis when bridge enters, release when it exits or finishes
+    // IntersectionObserver: lock Lenis when bridge enters, release when it exits or finishes.
+    // threshold: 0 because the section is 850vh — no more than ~12% can ever be visible,
+    // so any higher threshold would never fire.
     const io = new IntersectionObserver(([e]) => {
       if (reduced.current) {
         if (e.isIntersecting) setWordsVisible(true);
@@ -1382,7 +1384,7 @@ export default function BridgeOscilloscope() {
         isLockedRef.current = false;
         document.dispatchEvent(new CustomEvent('bridge-unlock'));
       }
-    }, { threshold: 0.15 });
+    }, { threshold: 0 });
     io.observe(section);
 
     function draw(ts: number) {
@@ -1392,16 +1394,18 @@ export default function BridgeOscilloscope() {
       ctx!.clearRect(0, 0, w, h);
 
       if (!reduced.current) {
-        // Always advance at fixed rate — scroll position doesn't affect speed
-        displayProg.current = Math.min(1, displayProg.current + ANIM_DELTA);
-
-        // Once the full animation completes, release scroll lock
-        if (displayProg.current >= 1 && isLockedRef.current) {
-          isLockedRef.current = false;
-          document.dispatchEvent(new CustomEvent('bridge-unlock'));
-          // Teleport scroll to end of section so user continues naturally
-          const endTop = section!.offsetTop + section!.offsetHeight - window.innerHeight;
-          window.scrollTo({ top: Math.max(0, endTop), behavior: 'instant' });
+        // Only advance while the lock is held (section is visible and playing).
+        // This prevents displayProg silently reaching 1 before the user ever scrolls here.
+        if (isLockedRef.current) {
+          displayProg.current = Math.min(1, displayProg.current + ANIM_DELTA);
+          // Once the full animation completes, release scroll lock
+          if (displayProg.current >= 1) {
+            isLockedRef.current = false;
+            document.dispatchEvent(new CustomEvent('bridge-unlock'));
+            // Teleport scroll to end of section so user continues naturally
+            const endTop = section!.offsetTop + section!.offsetHeight - window.innerHeight;
+            window.scrollTo({ top: Math.max(0, endTop), behavior: 'instant' });
+          }
         }
       } else {
         displayProg.current = 1;

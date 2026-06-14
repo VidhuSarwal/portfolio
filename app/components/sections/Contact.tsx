@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'; // useState used by useCyclingScramble
 import SignalPong from '@/app/components/SignalPong';
-
-const MAILTO = 'mailto:vs@vidhux.dev'; // public alias — no personal address in source
 
 const SOMETHING_VARIANTS = ['something.', 'something real.', 'something fast.', 'something lasting.', 'something strange.'];
 const MAX_LEN = Math.max(...SOMETHING_VARIANTS.map(v => v.length));
@@ -60,23 +58,11 @@ function useCyclingScramble(variants: string[]) {
 }
 
 export default function Contact() {
-  const [copied, setCopied] = useState(false);
   const sectionRef  = useRef<HTMLElement>(null);
   const somethingDisplay = useCyclingScramble(SOMETHING_VARIANTS);
   const headingRef  = useRef<HTMLHeadingElement>(null);
   const bodyRef     = useRef<HTMLDivElement>(null);
   const linksRef    = useRef<HTMLUListElement>(null);
-
-  async function copyEmail(e: React.MouseEvent) {
-    e.preventDefault();
-    try {
-      await navigator.clipboard.writeText('vs@vidhux.dev');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      window.location.href = MAILTO;
-    }
-  }
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -133,8 +119,8 @@ export default function Contact() {
         gap: 0,
         paddingInline: 'clamp(24px, 5.5vw, 80px)',
       }}>
-        {/* ── Left: text content ── capped width so Pong has room */}
-        <div style={{ flex: '0 0 auto', width: 'min(520px, 55%)', minWidth: 0 }}>
+        {/* ── Left: text content ── 50% equal column */}
+        <div style={{ flex: '1 1 0', minWidth: 0, paddingRight: 'clamp(24px, 3vw, 48px)' }}>
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
             06 / CONTACT
           </p>
@@ -144,7 +130,7 @@ export default function Contact() {
             id="contact-heading"
             style={{
               fontFamily: 'var(--font-display), system-ui, sans-serif',
-              fontSize: 'clamp(52px, 7.5vw, 120px)',
+              fontSize: 'clamp(36px, 5vw, 80px)',
               fontWeight: 700,
               lineHeight: 0.95,
               letterSpacing: '-0.025em',
@@ -183,45 +169,6 @@ export default function Contact() {
             ref={linksRef}
             style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {/* Email — click to copy, address hidden */}
-            <li>
-              <button
-                onClick={copyEmail}
-                aria-label={copied ? 'Email copied!' : 'Copy email to clipboard'}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  color: 'var(--text-primary)',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
-              >
-                <span className="text-body" style={{ fontSize: 'clamp(16px, 1.4vw, 22px)', letterSpacing: '-0.01em' }}>
-                  EMAIL
-                </span>
-                <span
-                  className="text-mono"
-                  style={{
-                    color: copied ? 'var(--accent)' : 'var(--text-tertiary)',
-                    transition: 'color 0.2s, opacity 0.2s',
-                    opacity: copied ? 1 : 0.6,
-                    fontSize: '10px',
-                    letterSpacing: '0.16em',
-                  }}
-                >
-                  {copied ? '✓ COPIED' : 'CLICK TO COPY'}
-                </span>
-              </button>
-            </li>
-
-            <li style={{ height: '1px', background: 'var(--border-rest)', maxWidth: '480px' }} />
-
             <li>
               <a
                 href="https://github.com/VidhuSarwal"
