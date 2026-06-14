@@ -1336,18 +1336,18 @@ function WordReveal({ visible }: { visible: boolean }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-// Max animation advance per frame — caps how fast the build can play regardless of scroll speed.
-// 1/600 ≈ 0.00167 → full 0→1 traverse in ≥600 frames (~10s at 60fps).
-const MAX_PROG_DELTA = 1 / 600;
+// Time-driven animation speed: 1/540 per frame → full build in ~9s at 60fps.
+// Used both when scroll-locked (bridge-lock) and as max rate when scroll-driven.
+const ANIM_DELTA = 1 / 540;
 
 export default function BridgeOscilloscope() {
-  const sectionRef  = useRef<HTMLElement>(null);
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const targetProg  = useRef(0);  // raw scroll-driven progress
-  const displayProg = useRef(0);  // rate-limited, used for drawing
-  const animId      = useRef(0);
-  const reduced     = useRef(false);
-  const boxRef      = useRef<HTMLDivElement>(null);
+  const sectionRef   = useRef<HTMLElement>(null);
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const displayProg  = useRef(0);   // what's actually drawn
+  const isLockedRef  = useRef(false); // true while Lenis is stopped for us
+  const animId       = useRef(0);
+  const reduced      = useRef(false);
+  const boxRef       = useRef<HTMLDivElement>(null);
   const [wordsVisible, setWordsVisible] = useState(false);
 
   useEffect(() => {
@@ -1362,25 +1362,27 @@ export default function BridgeOscilloscope() {
       const dpr = window.devicePixelRatio || 1;
       canvas!.width  = Math.round(canvas!.offsetWidth  * dpr);
       canvas!.height = Math.round(canvas!.offsetHeight * dpr);
-      // setTransform resets any accumulated scale before applying DPR
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     const ro = new ResizeObserver(resize);
     ro.observe(canvas); resize();
 
-    function onScroll() {
-      const rect = section!.getBoundingClientRect();
-      const scrollable = section!.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) { targetProg.current = 0; return; }
-      targetProg.current = c01(-rect.top / scrollable);
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-
-    // For reduced motion: reveal words as soon as section is in view
+    // IntersectionObserver: lock Lenis when bridge enters, release when it exits or finishes
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && reduced.current) setWordsVisible(true);
-    }, { threshold: 0.06 });
+      if (reduced.current) {
+        if (e.isIntersecting) setWordsVisible(true);
+        return;
+      }
+      if (e.isIntersecting && !isLockedRef.current) {
+        // Reset animation and lock scroll so the build plays as a movie scene
+        displayProg.current = 0;
+        isLockedRef.current = true;
+        document.dispatchEvent(new CustomEvent('bridge-lock'));
+      } else if (!e.isIntersecting && isLockedRef.current) {
+        isLockedRef.current = false;
+        document.dispatchEvent(new CustomEvent('bridge-unlock'));
+      }
+    }, { threshold: 0.15 });
     io.observe(section);
 
     function draw(ts: number) {
@@ -1389,11 +1391,18 @@ export default function BridgeOscilloscope() {
       if (w === 0 || h === 0) return;
       ctx!.clearRect(0, 0, w, h);
 
-      // Advance displayProg toward targetProg at a max rate — fast scroll can't skip scenes
       if (!reduced.current) {
-        const diff  = targetProg.current - displayProg.current;
-        const delta = Math.sign(diff) * Math.min(Math.abs(diff), MAX_PROG_DELTA);
-        displayProg.current += delta;
+        // Always advance at fixed rate — scroll position doesn't affect speed
+        displayProg.current = Math.min(1, displayProg.current + ANIM_DELTA);
+
+        // Once the full animation completes, release scroll lock
+        if (displayProg.current >= 1 && isLockedRef.current) {
+          isLockedRef.current = false;
+          document.dispatchEvent(new CustomEvent('bridge-unlock'));
+          // Teleport scroll to end of section so user continues naturally
+          const endTop = section!.offsetTop + section!.offsetHeight - window.innerHeight;
+          window.scrollTo({ top: Math.max(0, endTop), behavior: 'instant' });
+        }
       } else {
         displayProg.current = 1;
       }
@@ -1491,12 +1500,15 @@ export default function BridgeOscilloscope() {
       }
     }
     animId.current = requestAnimationFrame(draw);
-    if (reduced.current) setWordsVisible(true);
 
     return () => {
       cancelAnimationFrame(animId.current);
       ro.disconnect(); io.disconnect();
-      window.removeEventListener('scroll', onScroll);
+      // Release lock on unmount in case component tears down mid-animation
+      if (isLockedRef.current) {
+        isLockedRef.current = false;
+        document.dispatchEvent(new CustomEvent('bridge-unlock'));
+      }
     };
   }, []);
 

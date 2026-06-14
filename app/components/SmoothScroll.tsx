@@ -19,6 +19,12 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     const lenis = new Lenis({ duration: 1.2 });
     lenisRef.current = lenis;
 
+    // Bridge animation lock/unlock — dispatched by BridgeOscilloscope
+    function onBridgeLock()   { lenisRef.current?.stop(); }
+    function onBridgeUnlock() { lenisRef.current?.start(); }
+    document.addEventListener('bridge-lock',   onBridgeLock);
+    document.addEventListener('bridge-unlock', onBridgeUnlock);
+
     // Async GSAP import — guarded against unmount
     (async () => {
       const { gsap } = await import('gsap');
@@ -39,6 +45,8 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       removeFrameRef.current?.();
       lenisRef.current?.destroy();
       lenisRef.current = null;
+      document.removeEventListener('bridge-lock',   onBridgeLock);
+      document.removeEventListener('bridge-unlock', onBridgeUnlock);
     };
   }, []);
 
