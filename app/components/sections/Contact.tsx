@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import SignalPong from '@/app/components/SignalPong';
 
-const MAILTO = 'mailto:vidhu.sarwal19@gmail.com';
+const MAILTO = 'mailto:vs@vidhux.dev'; // public alias — no personal address in source
 
 const SOMETHING_VARIANTS = ['something.', 'something real.', 'something fast.', 'something lasting.', 'something strange.'];
 const MAX_LEN = Math.max(...SOMETHING_VARIANTS.map(v => v.length));
@@ -19,7 +19,7 @@ function useCyclingScramble(variants: string[]) {
     function scrambleTo(target: string) {
       cancelAnimationFrame(rafRef.current);
       const start    = performance.now();
-      const DURATION = 500;
+      const DURATION = 900; // slower, smoother reveal
       function tick() {
         const t = Math.min(1, (performance.now() - start) / DURATION);
         // Resolve left-to-right; unresolved chars show placeholder '·'
@@ -46,10 +46,10 @@ function useCyclingScramble(variants: string[]) {
     function cycle() {
       idxRef.current = (idxRef.current + 1) % variants.length;
       scrambleTo(variants[idxRef.current]);
-      tmrRef.current = setTimeout(cycle, 4500);
+      tmrRef.current = setTimeout(cycle, 7000);
     }
 
-    tmrRef.current = setTimeout(cycle, 4000);
+    tmrRef.current = setTimeout(cycle, 6000);
     return () => {
       clearTimeout(tmrRef.current);
       cancelAnimationFrame(rafRef.current);
@@ -70,7 +70,7 @@ export default function Contact() {
   async function copyEmail(e: React.MouseEvent) {
     e.preventDefault();
     try {
-      await navigator.clipboard.writeText('vidhu.sarwal19@gmail.com');
+      await navigator.clipboard.writeText('vs@vidhux.dev');
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -125,9 +125,16 @@ export default function Contact() {
         borderTop: '1px solid var(--border-rest)',
       }}
     >
-      <div className="content-grid">
-        {/* ── Left: text content ── */}
-        <div className="col-span-12 lg:col-span-6">
+      {/* Outer wrapper: flex row on desktop, stack on mobile */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        gap: 0,
+        paddingInline: 'clamp(24px, 5.5vw, 80px)',
+      }}>
+        {/* ── Left: text content ── capped width so Pong has room */}
+        <div style={{ flex: '0 0 auto', width: 'min(520px, 55%)', minWidth: 0 }}>
           <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
             06 / CONTACT
           </p>
@@ -245,18 +252,26 @@ export default function Contact() {
               </a>
             </li>
           </ul>
-        </div>
+        </div>{/* end left text column */}
 
         {/* ── Right: SignalPong — desktop only ── */}
         <div
-          className="col-span-12 lg:col-span-6"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}
+          aria-hidden="true"
+          className="signal-pong-desktop"
+          style={{
+            flex: '1 1 0',
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingLeft: 'clamp(32px, 4vw, 64px)',
+          }}
         >
-          <div style={{ width: '100%', maxWidth: '420px', aspectRatio: '4 / 3' }}>
+          <div style={{ width: '100%', aspectRatio: '4 / 3' }}>
             <SignalPong />
           </div>
         </div>
-      </div>
+      </div>{/* end flex row */}
     </section>
   );
 }

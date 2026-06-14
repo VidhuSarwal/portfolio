@@ -265,3 +265,13 @@ html.theme-transitioning *:not(canvas) {
     display: block;
   }
 }
+
+/* SignalPong: hidden on mobile, visible on desktop */
+.signal-pong-desktop {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .signal-pong-desktop {
+    display: block;
+  }
+}
