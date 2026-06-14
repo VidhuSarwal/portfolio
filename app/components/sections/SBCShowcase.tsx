@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { siteConfig } from '@/lib/config';
 import { projects } from '@/lib/projects';
 import type { Project } from '@/lib/projects';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
 
 // ── Canvas color helpers (canvas ctx only — no CSS vars) ──────────────────────
 const W = (a: number) => `rgba(255,255,255,${a})`;
@@ -793,6 +794,7 @@ function ProjectRow({
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function Projects() {
+  const isMobile     = useIsMobile();
   const outerRef     = useRef<HTMLElement>(null);
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -955,8 +957,8 @@ export default function Projects() {
             margin:   '0 auto',
             padding:  `clamp(28px, 4.5vh, 52px) clamp(24px, 5.5vw, 80px)`,
             display:  'grid',
-            gridTemplateColumns: '1fr 340px',
-            gap:      'clamp(40px, 5vw, 80px)',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 340px',
+            gap:      isMobile ? 'clamp(28px, 4vh, 40px)' : 'clamp(40px, 5vw, 80px)',
             alignItems: 'center',
           }}
         >
@@ -1068,8 +1070,8 @@ export default function Projects() {
             {/* Canvas frame */}
             <div
               style={{
-                width:    '340px',
-                height:   '340px',
+                width:    isMobile ? '100%' : '340px',
+                height:   isMobile ? 'min(85vw, 340px)' : '340px',
                 border:   '1px solid var(--border-rest)',
                 position: 'relative',
                 overflow: 'hidden',

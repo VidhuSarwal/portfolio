@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import SignalPong from '@/app/components/SignalPong';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
 
 export default function Contact() {
+  const isMobile   = useIsMobile();
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const bodyRef    = useRef<HTMLDivElement>(null);
@@ -151,7 +153,7 @@ export default function Contact() {
         {/* ── Right column: SignalPong ───────────────────────────────── */}
         <div
           className="col-span-12 lg:col-span-6"
-          style={{ height: 'clamp(340px, 48vh, 520px)' }}
+          style={{ height: isMobile ? 'clamp(260px, 70vw, 340px)' : 'clamp(340px, 48vh, 520px)' }}
         >
           <SignalPong />
         </div>

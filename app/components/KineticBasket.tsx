@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
 
 // ── Geometry ──────────────────────────────────────────────────────────────────
 const BH        = 68;
@@ -77,6 +78,7 @@ export default function KineticBasket({
   marginBot = 80,
   offsetX   = 'var(--margin-safe-area)',
 }: Props) {
+  const isMobile = useIsMobile();
   const containerRef  = useRef<HTMLDivElement>(null);
   const railSvgRef    = useRef<SVGSVGElement>(null);
   const basketSvgRef  = useRef<SVGSVGElement>(null);
@@ -226,6 +228,8 @@ export default function KineticBasket({
     rafRef.current = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafRef.current);
   }, [marginTop, marginBot]);
+
+  if (isMobile) return null;
 
   return (
     <div

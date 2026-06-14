@@ -265,3 +265,36 @@ html.theme-transitioning *:not(canvas) {
     display: block;
   }
 }
+
+/* ─── Mobile overrides (≤ 767px) ───────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Typography — allow wrapping, reduce min floor */
+  .text-hero {
+    font-size: clamp(40px, 11vw, 72px);
+    white-space: normal;
+  }
+  .text-section {
+    font-size: clamp(32px, 9vw, 56px);
+  }
+  .text-body {
+    font-size: clamp(14px, 3.8vw, 16px);
+  }
+
+  /* Grid — collapse to single column, tighten padding */
+  .content-grid {
+    grid-template-columns: 1fr;
+    padding-inline: clamp(20px, 5vw, 32px);
+    gap: 16px;
+  }
+
+  /* All col-span-* fill the single column */
+  [class*="col-span-"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Corner brackets — smaller on mobile */
+  :root {
+    --corner-length: 36px;
+    --margin-safe-area: clamp(20px, 4vw, 32px);
+  }
+}

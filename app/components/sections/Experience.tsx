@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { siteConfig } from '@/lib/config';
 import { experiences } from '@/lib/experience';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
 
 const STATE_LABELS: Record<string, string> = {
   sentinal: 'PROTOTYPING',
@@ -17,6 +18,7 @@ const FREEZE_START = 0.08; // 8% — approach buffer, kills diagonal feel
 const FREEZE_END   = 0.14; // 14% — hold last card before section exits
 
 export default function Experience() {
+  const isMobile   = useIsMobile();
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef   = useRef<HTMLDivElement>(null);
   const lineRef    = useRef<SVGLineElement>(null);
@@ -86,6 +88,90 @@ export default function Experience() {
   const cPad = 'clamp(28px, 3.2vw, 48px)';
   const vTop = 'clamp(40px, 6vh, 64px)';
   const LINE = 'clamp(72px, 10vh, 100px)';
+
+  // ── Mobile: vertical card stack ───────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <section
+        id="experience"
+        aria-labelledby="experience-heading"
+        style={{
+          borderTop: '1px solid var(--border-rest)',
+          paddingBlock: 'clamp(64px, 12vh, 100px)',
+        }}
+      >
+        <div style={{ padding: '0 clamp(20px, 5vw, 32px)' }}>
+          <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            04 / EXPERIENCE
+          </p>
+          <h2
+            id="experience-heading"
+            className="text-section"
+            style={{ color: 'var(--text-primary)', marginBottom: 'clamp(40px, 8vh, 64px)' }}
+          >
+            Work<br />History
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {visible.map((exp, i) => {
+              const [mainTitle, subTitle] = exp.role.split(' — ');
+              return (
+                <article
+                  key={exp.id}
+                  aria-labelledby={`exp-role-mobile-${exp.id}`}
+                  style={{
+                    borderTop: '1px solid var(--border-rest)',
+                    paddingBlock: 'clamp(28px, 5vh, 40px)',
+                  }}
+                >
+                  <p className="text-mono" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+                    {exp.dateRange}
+                  </p>
+                  <p style={{
+                    fontFamily: 'var(--font-display), system-ui, sans-serif',
+                    fontSize: 'clamp(18px, 5vw, 26px)',
+                    fontWeight: 700,
+                    letterSpacing: '-0.015em',
+                    color: 'var(--accent)',
+                    marginBottom: '10px',
+                  }}>
+                    {exp.company}
+                  </p>
+                  <h3
+                    id={`exp-role-mobile-${exp.id}`}
+                    style={{
+                      fontFamily: 'var(--font-display), system-ui, sans-serif',
+                      fontSize: 'clamp(16px, 4.5vw, 22px)',
+                      fontWeight: 600,
+                      color: 'var(--text-primary)',
+                      marginBottom: subTitle ? '4px' : '12px',
+                    }}
+                  >
+                    {mainTitle}
+                  </h3>
+                  {subTitle && (
+                    <p className="text-mono" style={{ color: 'var(--text-tertiary)', marginBottom: '12px' }}>
+                      {subTitle}
+                    </p>
+                  )}
+                  <p className="text-body" style={{ color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.6 }}>
+                    {exp.description}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {exp.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
+                  </div>
+                  <p className="text-mono" style={{ color: 'var(--text-tertiary)', marginTop: '16px', opacity: 0.5 }}>
+                    {String(i + 1).padStart(2, '0')} / {String(visible.length).padStart(2, '0')}
+                  </p>
+                </article>
+              );
+            })}
+            <div style={{ borderTop: '1px solid var(--border-rest)' }} />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     /*

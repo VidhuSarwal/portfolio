@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { siteConfig } from '@/lib/config';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
 
 const TICKER_A =
   'LINUX KERNEL · EMBEDDED C · ARM · BUILDROOT · DEVICE TREE · RTOS · BOOTLOADER · ASSEMBLY · I2C / SPI / UART · ';
@@ -38,6 +39,7 @@ function StatCard({
   const ref            = useRef<HTMLDivElement>(null);
   const { count, trigger } = useCountUp(value);
   const [hovered, setHovered] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const el = ref.current;
@@ -59,8 +61,9 @@ function StatCard({
       onMouseLeave={() => setHovered(false)}
       style={{
         flex: 1,
-        padding: 'clamp(28px, 4vh, 48px) clamp(28px, 3.5vw, 52px)',
-        borderLeft: '1px solid var(--border-rest)',
+        padding: isMobile ? 'clamp(24px, 4vh, 36px) clamp(24px, 5.5vw, 52px)' : 'clamp(28px, 4vh, 48px) clamp(28px, 3.5vw, 52px)',
+        borderLeft: isMobile ? 'none' : '1px solid var(--border-rest)',
+        borderTop: isMobile ? '1px solid var(--border-rest)' : 'none',
         cursor: 'default',
         background: hovered ? 'var(--hover-surface)' : 'transparent',
         transition: 'background 0.25s ease',
@@ -112,6 +115,7 @@ function StatCard({
 
 // ── Section ───────────────────────────────────────────────────────────────────
 export default function StatsBridge() {
+  const isMobile = useIsMobile();
   const stats = [
     {
       value: 20, suffix: '+', label: 'TECHNOLOGIES',
@@ -163,6 +167,7 @@ export default function StatsBridge() {
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           borderBottom: '1px solid var(--border-rest)',
         }}
       >
