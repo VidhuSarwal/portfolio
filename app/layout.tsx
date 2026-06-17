@@ -8,6 +8,7 @@ import MarginStatus from '@/app/components/MarginStatus';
 import { LoaderProvider } from '@/app/providers/LoaderContext';
 import { ThemeProvider } from '@/app/providers/ThemeContext';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 const spaceGrotesk = Space_Grotesk({
@@ -111,6 +112,7 @@ export default function RootLayout({
           </LoaderProvider>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
