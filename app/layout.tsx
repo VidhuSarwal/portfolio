@@ -25,13 +25,68 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VX Works',
+  metadataBase: new URL('https://vidhux.dev'),
+  title: {
+    default: 'Vidhu Sarwal — Systems Engineer',
+    template: '%s | Vidhu Sarwal',
+  },
   description:
-    "Final-year CS undergrad. GSoC '25 at BeagleBoard.org. Samsung PRISM. Linux Kernel Mentorship Program.",
+    "Vidhu Sarwal — systems engineer and final-year CS undergrad. GSoC '25 at BeagleBoard.org, Samsung PRISM Research Intern, Linux Kernel Mentorship Program (LFX '26). Linux kernel, distributed systems, AI infrastructure.",
+  keywords: [
+    'Vidhu Sarwal',
+    'systems engineer',
+    'Linux kernel developer',
+    'GSoC 2025',
+    'Google Summer of Code',
+    'BeagleBoard',
+    'Samsung PRISM',
+    'Linux Foundation Mentorship',
+    'LFX mentorship',
+    'portfolio',
+    'software engineer',
+    'distributed systems',
+    'AI infrastructure',
+    'Chandigarh',
+  ],
+  authors: [{ name: 'Vidhu Sarwal', url: 'https://vidhux.dev' }],
+  creator: 'Vidhu Sarwal',
   openGraph: {
-    title: 'VX Works',
-    description: 'Linux kernel · Distributed systems · AI infrastructure.',
     type: 'website',
+    url: 'https://vidhux.dev',
+    siteName: 'Vidhu Sarwal',
+    title: 'Vidhu Sarwal — Systems Engineer',
+    description:
+      "GSoC '25 at BeagleBoard.org · Samsung PRISM · Linux Kernel Mentorship (LFX '26). Linux kernel, distributed systems, AI infrastructure.",
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Vidhu Sarwal — Systems Engineer',
+      },
+    ],
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Vidhu Sarwal — Systems Engineer',
+    description:
+      "GSoC '25 at BeagleBoard.org · Samsung PRISM · Linux Kernel Mentorship.",
+    images: ['/og-image.png'],
+  },
+  alternates: {
+    canonical: 'https://vidhux.dev',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 

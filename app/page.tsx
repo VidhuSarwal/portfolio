@@ -10,9 +10,34 @@ import TechStack from '@/app/components/sections/TechStack';
 import Contact from '@/app/components/sections/Contact';
 import VXFooter from '@/app/components/sections/VXFooter';
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Vidhu Sarwal',
+  url: 'https://vidhux.dev',
+  jobTitle: 'Systems Engineer',
+  description:
+    "Final-year CS undergrad specializing in Linux kernel development, distributed systems, and AI infrastructure. GSoC '25 at BeagleBoard.org, Samsung PRISM Research Intern, Linux Kernel Mentorship Program (LFX '26).",
+  sameAs: [
+    'https://github.com/VidhuSarwal',
+    'https://linkedin.com/in/vidhusarwal',
+  ],
+  knowsAbout: [
+    'Linux Kernel',
+    'Distributed Systems',
+    'AI Infrastructure',
+    'Systems Engineering',
+    'Embedded Systems',
+  ],
+};
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <SkipNav />
       <NavOverlay />
       <KineticBasket />
