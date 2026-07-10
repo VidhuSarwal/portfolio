@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "total": 3,
+    "merged": 3,
+    "pending": 0
+  },
+  "contributions": [
+    {
+      "id": "patch-001",
+      "title": "iio: light: al3010: fix incorrect scale for the highest gain range",
+      "subsystem": "IIO",
+      "date": "2026-07-04",
+      "status": "merged",
+      "version": "v7.2",
+      "description": "The al3010 ambient light sensor driver encoded the highest gain range scale as {0, 1187200}, but IIO_VAL_INT_PLUS_MICRO requires the micro part to be below 1,000,000. The malformed entry caused writes to return -EINVAL, making the top gain range impossible to select from userspace and reporting a bogus value on read. Fixed by re-encoding as {1, 187200}. Marked for backport to stable.",
+      "lore_url": "https://lore.kernel.org/all/20260704115245.11167-1-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-002",
+      "title": "staging: media: ipu7: fix pm_runtime refcount leak in ipu7_init_fw_code_region_by_sys()",
+      "subsystem": "STAGING",
+      "date": "2026-07-04",
+      "status": "merged",
+      "version": null,
+      "description": "ipu7_init_fw_code_region_by_sys() called pm_runtime_get_sync(), which increments the runtime-PM usage counter even when resume fails. The error path returned without a matching pm_runtime_put(), leaking a reference on every failed resume and eventually preventing the device from ever suspending. Fixed by switching to pm_runtime_resume_and_get(), which drops the reference automatically on failure — consistent with the sibling ipu6 driver.",
+      "lore_url": "https://lore.kernel.org/all/20260704083031.8524-2-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-003",
+      "title": "staging: media: ipu7: fix pm_runtime refcount leak in ipu7_resume()",
+      "subsystem": "STAGING",
+      "date": "2026-07-04",
+      "status": "merged",
+      "version": null,
+      "description": "A second pm_runtime refcount bug in the IPU7 driver: ipu7_resume() called pm_runtime_get_sync() and returned without restoring the counter on error, leaking the reference on every failed resume. Fixed with pm_runtime_resume_and_get() while preserving the intentional return-0-on-error behaviour — resume callbacks should not propagate failures to the PM core. Part of a two-patch series with the companion fix above.",
+      "lore_url": "https://lore.kernel.org/all/20260704083031.8524-3-vidhu.linux@gmail.com/"
+    }
+  ]
+}
