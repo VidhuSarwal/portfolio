@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import GridWall from '@/app/components/GridWall';
 import CipherLock from '@/app/components/CipherLock';
 import { useLoader } from '@/app/providers/LoaderContext';
@@ -255,26 +256,44 @@ export default function Hero() {
 
                 <span className="sep-line" style={{ marginTop: '32px', marginBottom: '32px' }} />
 
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <UnmaskReveal startDelay={CTA_START}>
-                    <a
-                      href="#sbc-showcase"
-                      data-label="[ VIEW WORK ]"
-                      className="text-mono"
+                {/* Featured kernel contributions CTA — accent-bordered, above primary CTAs */}
+                <UnmaskReveal startDelay={CTA_START - 200}>
+                  <Link
+                    href="/kernel"
+                    className="text-mono"
+                    style={{
+                      display: 'inline-flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      padding: '14px 28px',
+                      border: '1px solid var(--accent)',
+                      textDecoration: 'none',
+                      color: 'var(--accent)',
+                      fontSize: '13px',
+                      letterSpacing: '0.12em',
+                      transition: 'opacity 0.2s',
+                      marginBottom: '20px',
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.7'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = '1'; }}
+                  >
+                    <span
                       style={{
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-active)',
-                        padding: '12px 24px',
-                        textDecoration: 'none',
-                        letterSpacing: '0.12em',
-                        transition: 'border-color 0.2s, color 0.2s',
+                        fontFamily: 'var(--font-jetbrains), monospace',
+                        fontSize: '9px',
+                        letterSpacing: '0.14em',
+                        color: 'var(--text-tertiary)',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      VIEW WORK →
-                    </a>
-                  </UnmaskReveal>
+                      ↳ UPSTREAM · MAINLINE
+                    </span>
+                    VIEW KERNEL CONTRIBUTIONS →
+                  </Link>
+                </UnmaskReveal>
 
-                  <UnmaskReveal startDelay={CTA_START + 120}>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <UnmaskReveal startDelay={CTA_START}>
                     <a
                       href="#contact"
                       data-label="[ CONTACT ]"
