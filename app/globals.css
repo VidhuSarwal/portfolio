@@ -352,6 +352,66 @@ html.theme-transitioning *:not(canvas) {
   transform: scaleY(0);
 }
 
+/* Month divider — large label + accent diamond seated on the axis */
+.tl-group + .tl-group {
+  margin-top: 44px;
+}
+
+.tl-month {
+  position: relative;
+  padding: 0 0 18px 40px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tl-month-marker {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 11px;
+  height: 11px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+.tl-month-label {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.tl-month-year {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--text-tertiary);
+}
+
+.tl-month-count {
+  margin-left: auto;
+  color: var(--text-tertiary);
+}
+
+/* Per-entry date — day number emphasized, weekday muted */
+.tl-day {
+  color: var(--text-tertiary);
+  letter-spacing: 0.14em;
+}
+.tl-day-num {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .tl-item {
   position: relative;
   padding: 20px 0 20px 40px;
