@@ -1,22 +1,11 @@
 'use client';
 
-const STATUS_DOT = { merged: '●', pending: '○', rejected: '✕' } as const;
-const STATUS_LABEL = { merged: 'MERGED', pending: 'IN REVIEW', rejected: 'REJECTED' } as const;
+import { STATUS_META, toneColor, type KernelContribution } from './kernel';
 
-export interface KernelContribution {
-  id: string;
-  title: string;
-  subsystem: string;
-  date: string;
-  status: 'merged' | 'pending' | 'rejected';
-  version: string | null;
-  description: string;
-  lore_url: string;
-}
+export type { KernelContribution };
 
 export default function PatchRow({ patch }: { patch: KernelContribution }) {
-  const dot   = STATUS_DOT[patch.status];
-  const label = STATUS_LABEL[patch.status];
+  const { dot, label, tone } = STATUS_META[patch.status];
 
   return (
     <div style={{ padding: '28px 0', borderBottom: '1px solid var(--border-rest)' }}>
@@ -31,7 +20,7 @@ export default function PatchRow({ patch }: { patch: KernelContribution }) {
         <span
           className="text-mono"
           style={{
-            color: patch.status === 'merged' ? 'var(--accent)' : patch.status === 'rejected' ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+            color: toneColor(tone),
             display: 'flex',
             alignItems: 'center',
             gap: '5px',

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import KernelNav from './KernelNav';
-import PatchRow, { type KernelContribution } from './PatchRow';
+import KernelView from './KernelView';
+import { STATUS_META, statusesPresent, type KernelContribution } from './kernel';
 import contributionsData from '@/data/kernel-contributions.json';
 
 export const metadata: Metadata = {
@@ -11,14 +12,17 @@ export const metadata: Metadata = {
 
 export default function KernelPage() {
   const { contributions } = contributionsData as {
-    meta: { total: number; merged: number; pending: number };
     contributions: KernelContribution[];
   };
 
-  // Derive counts from the actual array — never drift from what's rendered
-  const total   = contributions.length;
-  const merged  = contributions.filter(p => p.status === 'merged').length;
-  const pending = contributions.filter(p => p.status === 'pending').length;
+  // Derive counts per present status from the actual array — never drift from
+  // what's rendered, and never drop a status the header didn't hardcode.
+  const total = contributions.length;
+  const counts = statusesPresent(contributions).map((s) => ({
+    status: s,
+    label: STATUS_META[s].label,
+    count: contributions.filter((p) => p.status === s).length,
+  }));
 
   return (
     <>
@@ -36,27 +40,19 @@ export default function KernelPage() {
               Linux Kernel<br />Contributions.
             </h1>
 
-            <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '0' }}>
+            <p className="text-mono" style={{ color: 'var(--text-secondary)', marginBottom: '28px' }}>
               {total} PATCHES
-              <span style={{ color: 'var(--text-tertiary)', margin: '0 10px' }}>·</span>
-              <span style={{ color: 'var(--accent)' }}>{merged} MERGED</span>
-              {pending > 0 && (
-                <>
+              {counts.map(({ status, label, count }) => (
+                <span key={status}>
                   <span style={{ color: 'var(--text-tertiary)', margin: '0 10px' }}>·</span>
-                  {pending} IN REVIEW
-                </>
-              )}
+                  <span style={{ color: status === 'merged' ? 'var(--accent)' : undefined }}>
+                    {count} {label}
+                  </span>
+                </span>
+              ))}
             </p>
 
-            <span className="sep-line" style={{ marginTop: '28px', marginBottom: '0' }} />
-
-            <div role="list" aria-label="Kernel patch contributions">
-              {contributions.map((patch) => (
-                <div key={patch.id} role="listitem">
-                  <PatchRow patch={patch} />
-                </div>
-              ))}
-            </div>
+            <KernelView contributions={contributions} />
 
             <p
               className="text-mono"

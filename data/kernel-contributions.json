@@ -2,7 +2,8 @@
   "meta": {
     "total": 8,
     "merged": 7,
-    "pending": 1
+    "rfc": 1,
+    "pending": 0
   },
   "contributions": [
     {
@@ -80,7 +81,7 @@
       "title": "fs/ntfs3: fix positive E_NTFS_NONRESIDENT leaking into writeback error path",
       "subsystem": "NTFS3",
       "date": "2026-07-13",
-      "status": "pending",
+      "status": "rfc",
       "version": null,
       "description": "attr_data_write_resident() returns the private positive code E_NTFS_NONRESIDENT (556) when a file's DATA attribute is found non-resident mid-writeback. Positive values are not valid Linux errnos and trigger WARN_ON_ONCE(err > 0) in both mapping_set_error() and the next writeback_iter() call — a syzbot-caught crash. Sent as RFC to ask the maintainer whether non-resident mid-writeback should be terminal or retried on the iomap path. The patch clamps the positive return to -EIO before both WARN sinks.",
       "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
