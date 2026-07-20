@@ -1,8 +1,8 @@
 {
   "meta": {
     "total": 8,
-    "merged": 3,
-    "pending": 5
+    "merged": 7,
+    "pending": 1
   },
   "contributions": [
     {
@@ -40,10 +40,40 @@
       "title": "iio: light: ltrf216a: fix runtime PM reference leak in error path",
       "subsystem": "IIO",
       "date": "2026-07-13",
-      "status": "pending",
+      "status": "merged",
       "version": null,
       "description": "ltrf216a_get_lux() acquires a runtime PM reference via ltrf216a_set_power_state(data, true) but returns early without releasing it when ltrf216a_read_data() fails. Every failed read leaks one PM reference, eventually preventing the device from autosuspending. Fixed by adding the matching ltrf216a_set_power_state(data, false) in the error branch so the usage count is balanced on both success and failure paths.",
       "lore_url": "https://lore.kernel.org/all/20260713022829.234370-1-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-006",
+      "title": "iio: light: opt4060: Reject integration times with a non-zero seconds part",
+      "subsystem": "IIO",
+      "date": "2026-07-15",
+      "status": "merged",
+      "version": null,
+      "description": "write_raw() for IIO_CHAN_INFO_INT_TIME uses IIO_VAL_INT_PLUS_MICRO encoding (val + val2×10⁻⁶), but only examines val2 and never validates val. All legal integration times for this chip have a seconds part of zero, so any non-zero val is by definition invalid — yet it was silently discarded and success returned, programming the wrong time. Fixed by returning -EINVAL early when val is non-zero, matching the IIO idiom used in sibling drivers. Marked for stable backport.",
+      "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-007",
+      "title": "iio: light: opt4060: Fix pointer type passed to div_u64_rem()",
+      "subsystem": "IIO",
+      "date": "2026-07-15",
+      "status": "merged",
+      "version": null,
+      "description": "opt4060_read_ev_period() passes val2, an int *, to div_u64_rem() which expects a u32 * for its remainder argument. int * and u32 * are incompatible C pointer types. There is no functional impact — sizes are identical on all Linux-supported architectures and the remainder fits the positive range of int — but the type is wrong. Fixed by introducing a local u32 rem, passing its address to div_u64_rem(), and assigning back.",
+      "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-008",
+      "title": "iio: light: opt4060: Fix incorrect register name in threshold read error message",
+      "subsystem": "IIO",
+      "date": "2026-07-15",
+      "status": "merged",
+      "version": null,
+      "description": "The second block in opt4060_get_thresholds() reads the HIGH threshold register but its dev_err() failure message reads \"Failed to read THRESHOLD_LOW.\" — copy-pasted from the LOW block immediately above. Purely diagnostic: the return value and side effects are unchanged. Fixed by correcting the string to THRESHOLD_HIGH so dmesg points at the right register on failure. Marked for stable backport.",
+      "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
     },
     {
       "id": "patch-005",
@@ -54,36 +84,6 @@
       "version": null,
       "description": "attr_data_write_resident() returns the private positive code E_NTFS_NONRESIDENT (556) when a file's DATA attribute is found non-resident mid-writeback. Positive values are not valid Linux errnos and trigger WARN_ON_ONCE(err > 0) in both mapping_set_error() and the next writeback_iter() call — a syzbot-caught crash. Sent as RFC to ask the maintainer whether non-resident mid-writeback should be terminal or retried on the iomap path. The patch clamps the positive return to -EIO before both WARN sinks.",
       "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
-    },
-    {
-      "id": "patch-006",
-      "title": "iio: light: opt4060: Reject integration times with a non-zero seconds part",
-      "subsystem": "IIO",
-      "date": "2026-07-15",
-      "status": "pending",
-      "version": null,
-      "description": "write_raw() for IIO_CHAN_INFO_INT_TIME uses IIO_VAL_INT_PLUS_MICRO encoding (val + val2×10⁻⁶), but only examines val2 and never validates val. All legal integration times for this chip have a seconds part of zero, so any non-zero val is by definition invalid — yet it was silently discarded and success returned, programming the wrong time. Fixed by returning -EINVAL early when val is non-zero, matching the IIO idiom used in sibling drivers. Patch 1/3 in series.",
-      "lore_url": "https://lore.kernel.org/all/20260715011544.281148-2-vidhu.linux@gmail.com/"
-    },
-    {
-      "id": "patch-007",
-      "title": "iio: light: opt4060: Fix pointer type passed to div_u64_rem()",
-      "subsystem": "IIO",
-      "date": "2026-07-15",
-      "status": "pending",
-      "version": null,
-      "description": "opt4060_read_ev_period() passes val2, an int *, to div_u64_rem() which expects a u32 * for its remainder argument. int * and u32 * are incompatible C pointer types. There is no functional impact — sizes are identical on all Linux-supported architectures and the remainder fits the positive range of int — but the type is wrong. Fixed by introducing a local u32 rem, passing its address to div_u64_rem(), and assigning back. Patch 2/3 in series.",
-      "lore_url": "https://lore.kernel.org/all/20260715011544.281148-3-vidhu.linux@gmail.com/"
-    },
-    {
-      "id": "patch-008",
-      "title": "iio: light: opt4060: Fix incorrect register name in threshold read error message",
-      "subsystem": "IIO",
-      "date": "2026-07-15",
-      "status": "pending",
-      "version": null,
-      "description": "The second block in opt4060_get_thresholds() reads the HIGH threshold register but its dev_err() failure message reads \"Failed to read THRESHOLD_LOW.\" — copy-pasted from the LOW block immediately above. Purely diagnostic: the return value and side effects are unchanged. Fixed by correcting the string to THRESHOLD_HIGH so dmesg points at the right register on failure. Patch 3/3 in series.",
-      "lore_url": "https://lore.kernel.org/all/20260715011544.281148-4-vidhu.linux@gmail.com/"
     }
   ]
 }
