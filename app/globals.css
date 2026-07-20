@@ -265,3 +265,165 @@ html.theme-transitioning *:not(canvas) {
     display: block;
   }
 }
+
+/* ─── Kernel view: controls, chips, view toggle ────────────────────── */
+.kv-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.kv-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-rest);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.view-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  transition: color 0.2s, background 0.2s;
+}
+.view-btn + .view-btn {
+  border-left: 1px solid var(--border-rest);
+}
+.view-btn:hover {
+  color: var(--text-primary);
+}
+.view-btn.is-active {
+  color: var(--bg-base);
+  background: var(--text-primary);
+}
+
+.kv-count {
+  color: var(--text-tertiary);
+}
+
+.kv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border-rest);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: color 0.2s, border-color 0.2s;
+}
+.chip:hover {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+.chip.is-active {
+  color: var(--text-primary);
+  border-color: var(--border-active);
+}
+
+/* ─── Kernel timeline ──────────────────────────────────────────────── */
+.tl-track {
+  position: relative;
+  padding-top: 8px;
+}
+
+/* Axis: resting line spans the full track; the fill scales from the top. */
+.tl-axis,
+.tl-axis-fill {
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  bottom: 0;
+  width: 1px;
+}
+.tl-axis {
+  background: var(--border-rest);
+}
+.tl-axis-fill {
+  background: var(--accent);
+  transform-origin: top center;
+  transform: scaleY(0);
+}
+
+.tl-item {
+  position: relative;
+  padding: 20px 0 20px 40px;
+}
+.tl-item + .tl-item {
+  border-top: 1px solid var(--border-rest);
+}
+
+.tl-node {
+  position: absolute;
+  left: 1px;
+  top: 26px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--text-secondary);
+  background: var(--bg-base);
+}
+
+.tl-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.tl-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.tl-lore {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border-rest);
+  transition: color 0.2s;
+}
+.tl-lore:hover {
+  color: var(--text-primary);
+}
+
+/* Reveal — easing, not spring. Neutralized under reduced motion. */
+.tl-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tl-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .tl-axis-fill {
+    transition: none;
+  }
+}
