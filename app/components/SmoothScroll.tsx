@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 
 // Routes that use native scroll instead of Lenis
-const NO_SMOOTH_SCROLL_ROUTES = new Set(['/kernel']);
+const NO_SMOOTH_SCROLL_ROUTES = new Set(['/kernel', '/lore']);
 
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);

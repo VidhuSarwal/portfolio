@@ -153,6 +153,31 @@ body {
   *, *::before, *::after {
     cursor: none !important;
   }
+
+  /* /lore has no custom cursor trail — keep the native pointer visible */
+  html[data-lore], html[data-lore] *,
+  html[data-lore]::before, html[data-lore] *::before,
+  html[data-lore]::after, html[data-lore] *::after {
+    cursor: auto !important;
+  }
+}
+
+/* /lore is a plain document — black background, white text, blue links,
+   including <html> so overscroll bounce doesn't reveal the site theme. */
+html[data-lore],
+html[data-lore] body {
+  background: #000000;
+  color: #ffffff;
+}
+
+html[data-lore] a,
+html[data-lore] a:visited {
+  color: #58a6ff;
+  cursor: pointer !important;
+}
+
+html[data-lore] hr {
+  border-color: #333;
 }
 
 /* ─── Section separator line ────────────────────────────────────────── */

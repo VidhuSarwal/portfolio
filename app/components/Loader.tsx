@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useLoader } from '@/app/providers/LoaderContext';
 
 const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789─│┤├┬┴·▪';
@@ -41,9 +42,17 @@ export default function Loader() {
   const { markDone } = useLoader();
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const [phase, setPhase] = useState<'visible' | 'curtain' | 'done'>('visible');
+  const pathname = usePathname();
+  const bare = pathname === '/lore';
+
+  // Plain pages (e.g. /lore) skip the splash entirely — mark done immediately.
+  useEffect(() => {
+    if (bare) markDone();
+  }, [bare, markDone]);
 
   // Blueprint canvas animation
   useEffect(() => {
+    if (bare) return;
     const canvas = canvasRef.current!;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
@@ -352,10 +361,11 @@ export default function Loader() {
 
     animId = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(animId); ro.disconnect(); };
-  }, []);
+  }, [bare]);
 
   // Splash timing — in dev, always show; in production skip on repeat visits
   useEffect(() => {
+    if (bare) return;
     const isDev = process.env.NODE_ENV !== 'production';
     const SKIP_KEY = 'vx:bp';
 
@@ -402,9 +412,9 @@ export default function Loader() {
     }, CURTAIN_DELAY + CURTAIN_DUR + 80);
 
     return () => { clearTimeout(t1); clearTimeout(t2); unlockScroll(); };
-  }, [markDone]);
+  }, [bare, markDone]);
 
-  if (phase === 'done') return null;
+  if (bare || phase === 'done') return null;
 
   return (
     <div

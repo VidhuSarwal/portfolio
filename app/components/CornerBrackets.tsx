@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 const L = 56;  // arm length (matches --corner-length)
 const O = 8;   // overshoot past corner point
@@ -34,9 +35,11 @@ const CORNERS: Array<{ id: string; pos: React.CSSProperties; lines: Line[] }> = 
 
 export default function CornerBrackets() {
   const refs = useRef<(HTMLDivElement | null)[]>([]);
+  const bare = usePathname() === '/lore';
 
   // Listen for section-change events dispatched by NavOverlay
   useEffect(() => {
+    if (bare) return;
     function pulse() {
       refs.current.forEach(el => {
         if (!el) return;
@@ -52,7 +55,9 @@ export default function CornerBrackets() {
 
     document.addEventListener('section-change', pulse);
     return () => document.removeEventListener('section-change', pulse);
-  }, []);
+  }, [bare]);
+
+  if (bare) return null;
 
   return (
     <>
