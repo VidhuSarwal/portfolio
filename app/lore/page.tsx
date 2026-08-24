@@ -30,6 +30,7 @@ export default function LorePage() {
           {contributions.length} patches, submitted via{' '}
           <a href="https://lore.kernel.org/" target="_blank" rel="noopener noreferrer">lore.kernel.org</a> / git send-email.
         </p>
+        <p style={{ fontSize: '0.85em', color: '#888' }}>(Descriptions automatically summarised using AI)</p>
 
         <hr />
 
