@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const TRAIL_COUNT = 6;
 const HISTORY_LENGTH = 32; // position buffer — controls trail spread
 
 export default function Cursor() {
+  const bare = usePathname() === '/lore';
   const [hasHover, setHasHover] = useState(false);
   const [label, setLabel] = useState('');
 
@@ -21,7 +23,7 @@ export default function Cursor() {
   }, []);
 
   useEffect(() => {
-    if (!hasHover) return;
+    if (bare || !hasHover) return;
 
     historyRef.current = Array(HISTORY_LENGTH).fill({ x: -200, y: -200 });
 
@@ -88,9 +90,9 @@ export default function Cursor() {
       cancelAnimationFrame(rafRef.current);
       clearTimeout(labelDebounceRef.current);
     };
-  }, [hasHover]);
+  }, [bare, hasHover]);
 
-  if (!hasHover) return null;
+  if (bare || !hasHover) return null;
 
   return (
     <>

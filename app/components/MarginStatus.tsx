@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 const baseStyle: React.CSSProperties = {
   position: 'fixed',
   bottom: 'var(--margin-safe-area)',
@@ -15,6 +17,8 @@ const baseStyle: React.CSSProperties = {
 };
 
 export default function MarginStatus() {
+  if (usePathname() === '/lore') return null;
+
   return (
     <>
       <span aria-hidden="true" style={{ ...baseStyle, left: 'var(--margin-safe-area)' }}>
