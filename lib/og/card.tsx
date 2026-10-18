@@ -40,7 +40,7 @@ export async function loadOgFonts() {
   ];
 }
 
-export function Mono({ children, color = OG.ink, size = 15 }: { children: ReactNode; color?: string; size?: number }) {
+export function Mono({ children, color = OG.ink, size = 18 }: { children: ReactNode; color?: string; size?: number }) {
   return (
     <div
       style={{
