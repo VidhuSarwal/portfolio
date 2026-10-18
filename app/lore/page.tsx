@@ -1,25 +1,16 @@
 import type { Metadata } from 'next';
-import contributionsData from '@/data/kernel-contributions.json';
-import type { KernelContribution } from '../kernel/kernel';
 import LoreChrome from './LoreChrome';
+import { loreContributions } from './lore';
+import { pageMeta } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: 'Lore',
   description: 'Links to Vidhu Sarwal\'s Linux kernel patches on lore.kernel.org.',
-};
+  path: '/lore',
+});
 
 export default function LorePage() {
-  const { contributions: allContributions } = contributionsData as {
-    contributions: KernelContribution[];
-  };
-
-  // This page's own curated order — excludes the NTFS3 RFC and pushes the
-  // two STAGING/ipu7 patches to the end. Doesn't touch the shared JSON, so
-  // /kernel's ordering and counts are unaffected.
-  const contributions = [
-    ...allContributions.filter((c) => c.subsystem !== 'NTFS3' && c.subsystem !== 'STAGING'),
-    ...allContributions.filter((c) => c.subsystem === 'STAGING'),
-  ];
+  const contributions = loreContributions();
 
   return (
     <>

@@ -9,6 +9,7 @@ import { LoaderProvider } from '@/app/providers/LoaderContext';
 import { ThemeProvider } from '@/app/providers/ThemeContext';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { SITE_NAME, X_HANDLE } from '@/lib/metadata';
 import './globals.css';
 
 const spaceGrotesk = Space_Grotesk({
@@ -53,30 +54,24 @@ export const metadata: Metadata = {
   creator: 'Vidhu Sarwal',
   openGraph: {
     type: 'website',
-    url: 'https://vidhux.dev',
-    siteName: 'Vidhu Sarwal',
+    url: '/',
+    siteName: SITE_NAME,
     title: 'Vidhu Sarwal — Systems Engineer',
     description:
-      "GSoC '25 at BeagleBoard.org · Samsung PRISM · Linux Kernel Mentorship (LFX '26). Linux kernel, distributed systems, AI infrastructure.",
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Vidhu Sarwal — Systems Engineer',
-      },
-    ],
+      "Linux kernel, distributed systems and AI infrastructure. LFX Kernel Mentorship '26 · GSoC '25 at BeagleBoard.org · Samsung PRISM.",
     locale: 'en_US',
   },
+  // Card image comes from app/opengraph-image.tsx (file convention), which
+  // Next also mirrors into twitter:image.
   twitter: {
     card: 'summary_large_image',
+    creator: X_HANDLE,
     title: 'Vidhu Sarwal — Systems Engineer',
     description:
-      "GSoC '25 at BeagleBoard.org · Samsung PRISM · Linux Kernel Mentorship.",
-    images: ['/og-image.png'],
+      "Linux kernel, distributed systems and AI infrastructure. LFX Kernel Mentorship '26 · GSoC '25 · Samsung PRISM.",
   },
   alternates: {
-    canonical: 'https://vidhux.dev',
+    canonical: '/',
   },
   robots: {
     index: true,

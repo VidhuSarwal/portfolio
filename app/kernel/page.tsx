@@ -3,12 +3,14 @@ import KernelNav from './KernelNav';
 import KernelView from './KernelView';
 import { STATUS_META, statusesPresent, type KernelContribution } from './kernel';
 import contributionsData from '@/data/kernel-contributions.json';
+import { pageMeta } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: 'Kernel Contributions',
   description:
     'Upstream Linux kernel patches by Vidhu Sarwal — bug fixes, driver work, and subsystem contributions submitted to lore.kernel.org.',
-};
+  path: '/kernel',
+});
 
 export default function KernelPage() {
   const { contributions } = contributionsData as {

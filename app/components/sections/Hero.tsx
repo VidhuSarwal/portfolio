@@ -5,6 +5,7 @@ import Link from 'next/link';
 import GridWall from '@/app/components/GridWall';
 import CipherLock from '@/app/components/CipherLock';
 import { useLoader } from '@/app/providers/LoaderContext';
+import { CREDENTIALS } from '@/lib/credentials';
 
 const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%&?';
 const SCRAMBLE_DIGITS = '0123456789';
@@ -13,12 +14,6 @@ const SCRAMBLE_DIGITS = '0123456789';
 const CRED_START = 2500;
 const CRED_STAGGER = 380;
 const CTA_START = CRED_START + 2 * CRED_STAGGER + 620; // ≈ 3880ms after loader
-
-const CREDENTIALS = [
-  { index: '01', label: 'LINUX KERNEL MENTORSHIP PROGRAM · LFX', year: "'26" },
-  { index: '02', label: 'GOOGLE SUMMER OF CODE · BEAGLEBOARD.ORG', year: "'25" },
-  { index: '03', label: 'SAMSUNG R&D · PRISM RESEARCH INTERN', year: "'25" },
-];
 
 function useScramble(target: string, startDelay: number, charSet = SCRAMBLE_CHARS) {
   const [display, setDisplay] = useState<string | null>(null);
