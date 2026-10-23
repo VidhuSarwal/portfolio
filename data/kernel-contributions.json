@@ -1,8 +1,8 @@
 {
   "meta": {
-    "total": 8,
-    "merged": 7,
-    "rfc": 1,
+    "total": 9,
+    "merged": 9,
+    "rfc": 0,
     "pending": 0
   },
   "contributions": [
@@ -47,6 +47,16 @@
       "lore_url": "https://lore.kernel.org/all/20260713022829.234370-1-vidhu.linux@gmail.com/"
     },
     {
+      "id": "patch-005",
+      "title": "fs/ntfs3: prevent positive E_NTFS_NONRESIDENT from reaching writeback error handling",
+      "subsystem": "NTFS3",
+      "date": "2026-07-13",
+      "status": "merged",
+      "version": null,
+      "description": "attr_data_write_resident() returns the private positive code E_NTFS_NONRESIDENT (556) when it finds a file's DATA attribute has become non-resident mid-writeback, the result of a race between is_resident() and attr_make_nonresident(). ntfs_writepages() passed that value straight into generic writeback error handling, which only expects 0 or a negative errno, so it tripped WARN_ON_ONCE(err > 0). Caught by syzbot. Fixed by translating positive E_NTFS_* codes to -EIO before the writeback error is recorded. In review, -EIO was kept over EFSCORRUPTED because the filesystem stays consistent and no metadata is corrupted. Sent as RFC, then applied by the ntfs3 maintainer.",
+      "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
+    },
+    {
       "id": "patch-006",
       "title": "iio: light: opt4060: Reject integration times with a non-zero seconds part",
       "subsystem": "IIO",
@@ -77,14 +87,14 @@
       "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
     },
     {
-      "id": "patch-005",
-      "title": "fs/ntfs3: fix positive E_NTFS_NONRESIDENT leaking into writeback error path",
-      "subsystem": "NTFS3",
-      "date": "2026-07-13",
-      "status": "rfc",
+      "id": "patch-009",
+      "title": "iio: humidity: am2315: fix negative temperature decoding",
+      "subsystem": "IIO",
+      "date": "2026-09-28",
+      "status": "merged",
       "version": null,
-      "description": "attr_data_write_resident() returns the private positive code E_NTFS_NONRESIDENT (556) when a file's DATA attribute is found non-resident mid-writeback. Positive values are not valid Linux errnos and trigger WARN_ON_ONCE(err > 0) in both mapping_set_error() and the next writeback_iter() call — a syzbot-caught crash. Sent as RFC to ask the maintainer whether non-resident mid-writeback should be terminal or retried on the iomap path. The patch clamps the positive return to -EIO before both WARN sinks.",
-      "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
+      "description": "The AM2315/AM2320 report temperature as a sign-magnitude value: bit 15 is the sign and bits 14-0 are the magnitude in 0.1 °C steps. am2315_read_data() stored the raw 16-bit value straight into an s16, so it was decoded as two's complement and every reading below 0 °C came out wrong. A reading of -0.1 °C (0x8001) was reported as -3276.7 °C. Both the read_raw and triggered buffer paths were affected. Fixed by decoding the sign bit before storing the value; positive readings are unchanged. Marked for stable backport.",
+      "lore_url": "https://lore.kernel.org/all/20260928142450.103799-1-vidhu.linux@gmail.com/"
     }
   ]
 }
