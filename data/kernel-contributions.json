@@ -7,26 +7,6 @@
   },
   "contributions": [
     {
-      "id": "patch-010",
-      "title": "iio: proximity: Add Benewake TF-Luna LiDAR driver",
-      "subsystem": "IIO",
-      "date": "2026-10-20",
-      "status": "pending",
-      "version": null,
-      "description": "A new IIO driver for the Benewake TF-Luna, a single-point time-of-flight LiDAR that measures 0.2 m to 8 m over I2C. The sensor runs in trigger mode: each read starts one measurement, waits for the timestamp register to change, then reads distance and signal strength together, because in continuous mode a read can catch the result registers half-updated unless it is synchronised to the data-ready pin. When the signal is too weak the sensor reports a dummy distance of 0, so those readings, and overexposed ones, return -ENODATA instead of a wrong distance. Probe reads the mode register back after setting it, since the sensor silently drops writes it is not ready for. Posted as a 3-patch series with the devicetree binding and the benewake vendor prefix.",
-      "lore_url": "https://lore.kernel.org/all/20261020-tf-luna-v1-0-53a88f93db24@gmail.com/"
-    },
-    {
-      "id": "patch-009",
-      "title": "iio: humidity: am2315: fix negative temperature decoding",
-      "subsystem": "IIO",
-      "date": "2026-09-28",
-      "status": "merged",
-      "version": null,
-      "description": "The AM2315/AM2320 report temperature in sign-magnitude form: bit 15 is the sign and bits 14-0 are the magnitude in 0.1 °C steps. am2315_read_data() stored the raw value straight into an s16, so every reading below zero was decoded as two's complement and came out wildly wrong (-0.1 °C read as -3276.7 °C), on both the read_raw and triggered buffer paths. Fixed by decoding the sign bit before storing the value; positive readings are unchanged. Other, non-kernel drivers for the same sensor hit this bug when it was placed in a freezer. Applied by the IIO maintainer and marked for stable.",
-      "lore_url": "https://lore.kernel.org/all/20260928142450.103799-1-vidhu.linux@gmail.com/"
-    },
-    {
       "id": "patch-001",
       "title": "iio: light: al3010: fix incorrect scale for the highest gain range",
       "subsystem": "IIO",
@@ -67,6 +47,16 @@
       "lore_url": "https://lore.kernel.org/all/20260713022829.234370-1-vidhu.linux@gmail.com/"
     },
     {
+      "id": "patch-005",
+      "title": "fs/ntfs3: prevent positive E_NTFS_NONRESIDENT from reaching writeback error handling",
+      "subsystem": "NTFS3",
+      "date": "2026-07-13",
+      "status": "merged",
+      "version": null,
+      "description": "attr_data_write_resident() returns ntfs3's private positive status code E_NTFS_NONRESIDENT (556) when a race between is_resident() and attr_make_nonresident() leaves the DATA attribute non-resident mid-writeback. ntfs_writepages() passed that value straight into generic writeback error handling, which expects 0 or a negative errno, so it tripped WARN_ON_ONCE(err > 0) in mapping_set_error() and writeback_iter(): a crash reported by syzbot. Sent as an RFC asking whether the path should fail or retry. The fix translates positive E_NTFS_* codes to -EIO before the error is recorded; in review, -EIO was kept over EFSCORRUPTED because the filesystem stays consistent and no metadata is corrupted. Applied by the ntfs3 maintainer.",
+      "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
+    },
+    {
       "id": "patch-006",
       "title": "iio: light: opt4060: Reject integration times with a non-zero seconds part",
       "subsystem": "IIO",
@@ -97,14 +87,24 @@
       "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
     },
     {
-      "id": "patch-005",
-      "title": "fs/ntfs3: prevent positive E_NTFS_NONRESIDENT from reaching writeback error handling",
-      "subsystem": "NTFS3",
-      "date": "2026-07-13",
+      "id": "patch-009",
+      "title": "iio: humidity: am2315: fix negative temperature decoding",
+      "subsystem": "IIO",
+      "date": "2026-09-28",
       "status": "merged",
       "version": null,
-      "description": "attr_data_write_resident() returns ntfs3's private positive status code E_NTFS_NONRESIDENT (556) when a race between is_resident() and attr_make_nonresident() leaves the DATA attribute non-resident mid-writeback. ntfs_writepages() passed that value straight into generic writeback error handling, which expects 0 or a negative errno, so it tripped WARN_ON_ONCE(err > 0) in mapping_set_error() and writeback_iter(): a crash reported by syzbot. Sent as an RFC asking whether the path should fail or retry. The fix translates positive E_NTFS_* codes to -EIO before the error is recorded; in review, -EIO was kept over EFSCORRUPTED because the filesystem stays consistent and no metadata is corrupted. Applied by the ntfs3 maintainer.",
-      "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
+      "description": "The AM2315/AM2320 report temperature in sign-magnitude form: bit 15 is the sign and bits 14-0 are the magnitude in 0.1 °C steps. am2315_read_data() stored the raw value straight into an s16, so every reading below zero was decoded as two's complement and came out wildly wrong (-0.1 °C read as -3276.7 °C), on both the read_raw and triggered buffer paths. Fixed by decoding the sign bit before storing the value; positive readings are unchanged. Other, non-kernel drivers for the same sensor hit this bug when it was placed in a freezer. Applied by the IIO maintainer and marked for stable.",
+      "lore_url": "https://lore.kernel.org/all/20260928142450.103799-1-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-010",
+      "title": "iio: proximity: Add Benewake TF-Luna LiDAR driver",
+      "subsystem": "IIO",
+      "date": "2026-10-20",
+      "status": "pending",
+      "version": null,
+      "description": "A new IIO driver for the Benewake TF-Luna, a single-point time-of-flight LiDAR that measures 0.2 m to 8 m over I2C. The sensor runs in trigger mode: each read starts one measurement, waits for the timestamp register to change, then reads distance and signal strength together, because in continuous mode a read can catch the result registers half-updated unless it is synchronised to the data-ready pin. When the signal is too weak the sensor reports a dummy distance of 0, so those readings, and overexposed ones, return -ENODATA instead of a wrong distance. Probe reads the mode register back after setting it, since the sensor silently drops writes it is not ready for. Posted as a 3-patch series with the devicetree binding and the benewake vendor prefix.",
+      "lore_url": "https://lore.kernel.org/all/20261020-tf-luna-v1-0-53a88f93db24@gmail.com/"
     }
   ]
 }
