@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import LoreChrome from './LoreChrome';
 import { loreContributions } from './lore';
+import { STATUS_META } from '../kernel/kernel';
 import { pageMeta } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMeta({
@@ -32,7 +33,7 @@ export default function LorePage() {
             </h3>
             <p style={{ color: '#aaa' }}>
               <em>
-                {c.subsystem} · {c.date} · {c.status.toUpperCase()}
+                {c.subsystem} · {c.date} · {STATUS_META[c.status].label}
                 {c.version ? ` · ${c.version}` : ''}
               </em>
             </p>
