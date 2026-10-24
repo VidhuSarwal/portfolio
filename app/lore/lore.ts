@@ -1,14 +1,15 @@
 import contributionsData from '@/data/kernel-contributions.json';
 import type { KernelContribution } from '../kernel/kernel';
 
-// This page's own curated order — excludes the NTFS3 RFC and pushes the
-// two STAGING/ipu7 patches to the end. Doesn't touch the shared JSON, so
+// This page's own curated order — excludes RFCs and pushes the two
+// STAGING/ipu7 patches to the end. Doesn't touch the shared JSON, so
 // /kernel's ordering and counts are unaffected. Shared by page.tsx and the
 // /lore social card so their counts match.
 export function loreContributions(): KernelContribution[] {
   const { contributions } = contributionsData as { contributions: KernelContribution[] };
+  const listed = contributions.filter((c) => c.status !== 'rfc');
   return [
-    ...contributions.filter((c) => c.subsystem !== 'NTFS3' && c.subsystem !== 'STAGING'),
-    ...contributions.filter((c) => c.subsystem === 'STAGING'),
+    ...listed.filter((c) => c.subsystem !== 'STAGING'),
+    ...listed.filter((c) => c.subsystem === 'STAGING'),
   ];
 }
