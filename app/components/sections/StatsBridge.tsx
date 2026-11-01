@@ -2,11 +2,18 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { siteConfig } from '@/lib/config';
+import contributionsData from '@/data/kernel-contributions.json';
+import { patchCount, type KernelContribution } from '@/app/kernel/kernel';
 
 const TICKER_A =
-  'LINUX KERNEL · EMBEDDED C · ARM · BUILDROOT · DEVICE TREE · RTOS · BOOTLOADER · ASSEMBLY · I2C / SPI / UART · ';
+  'LINUX KERNEL · IIO DRIVERS · DEVICE TREE · EMBEDDED C · FREERTOS · STM32 · ARM64 · BUILDROOT · ASSEMBLY · I2C / SPI / UART · ';
 const TICKER_B =
-  'PYTHON · LANGGRAPH · FASTAPI · RAG · CHROMADB · KUBERNETES · DOCKER · GO · POSTGRESQL · WEBSOCKETS · ';
+  'FIRECRACKER · KVM / QEMU · EBPF · NFTABLES · PYTHON · GO · LANGGRAPH · RAG · CHROMADB · FASTAPI · DOCKER · AWS EC2 · ';
+
+// Kernel tile reads the patch log, so it moves with /kernel
+const KERNEL = (contributionsData as { contributions: KernelContribution[] }).contributions;
+const KERNEL_SENT     = patchCount(KERNEL);
+const KERNEL_ACCEPTED = patchCount(KERNEL.filter((c) => c.status === 'merged'));
 
 // ── Count-up hook ─────────────────────────────────────────────────────────────
 function useCountUp(target: number, duration = 1100) {
@@ -138,8 +145,8 @@ export default function StatsBridge() {
       sub: 'Across systems, backend & AI — most used daily.',
     },
     {
-      value: 3, suffix: '', label: 'OPEN SOURCE PROGRAMS',
-      sub: 'GSoC · LFX LKMP · patches upstreamed to mainline.',
+      value: KERNEL_ACCEPTED, suffix: '', label: 'KERNEL PATCHES ACCEPTED',
+      sub: `${KERNEL_SENT} sent upstream · IIO, staging, NTFS3 · some in stable.`,
     },
     {
       value: 61, suffix: 'K', label: 'LOC SHIPPED',

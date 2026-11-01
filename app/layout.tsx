@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     template: '%s | Vidhu Sarwal',
   },
   description:
-    "Vidhu Sarwal — systems engineer and final-year CS undergrad. GSoC '25 at BeagleBoard.org, Samsung PRISM Research Intern, Linux Kernel Mentorship Program (LFX '26). Linux kernel, distributed systems, AI infrastructure.",
+    "Vidhu Sarwal — systems engineer and final-year CS undergrad. Platform Engineering Lead at Nexigence AI, Linux kernel developer (LFX '26), GSoC '25 at BeagleBoard.org, Samsung PRISM Research Intern. Linux kernel, virtualization, distributed systems, AI infrastructure.",
   keywords: [
     'Vidhu Sarwal',
     'systems engineer',
@@ -42,8 +42,10 @@ export const metadata: Metadata = {
     'Google Summer of Code',
     'BeagleBoard',
     'Samsung PRISM',
-    'Linux Foundation Mentorship',
-    'LFX mentorship',
+    'Linux Foundation',
+    'LFX Linux kernel',
+    'IIO driver',
+    'Nexigence AI',
     'portfolio',
     'software engineer',
     'distributed systems',
@@ -58,7 +60,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: 'Vidhu Sarwal — Systems Engineer',
     description:
-      "Linux kernel, distributed systems and AI infrastructure. LFX Kernel Mentorship '26 · GSoC '25 at BeagleBoard.org · Samsung PRISM.",
+      "Linux kernel, virtualization and AI infrastructure. Platform Engineering Lead at Nexigence AI · LFX Linux Kernel '26 · GSoC '25 at BeagleBoard.org · Samsung PRISM.",
     locale: 'en_US',
   },
   // Card images come from file conventions: app/twitter-image.tsx for X, and
@@ -68,7 +70,7 @@ export const metadata: Metadata = {
     creator: X_HANDLE,
     title: 'Vidhu Sarwal — Systems Engineer',
     description:
-      "Linux kernel, distributed systems and AI infrastructure. LFX Kernel Mentorship '26 · GSoC '25 · Samsung PRISM.",
+      "Linux kernel, virtualization and AI infrastructure. Nexigence AI · LFX Linux Kernel '26 · GSoC '25 · Samsung PRISM.",
   },
   alternates: {
     canonical: '/',
