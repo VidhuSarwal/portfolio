@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { STATUS_META, toneColor, type KernelContribution } from './kernel';
+import { patchCount, STATUS_META, toneColor, type KernelContribution } from './kernel';
 
 const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
 
@@ -25,9 +25,9 @@ interface MonthGroup {
   items: KernelContribution[];
 }
 
-// Sort chronologically (oldest → newest), then bucket into consecutive months.
+// Sort newest → oldest (latest patches on top), then bucket into consecutive months.
 function groupByMonth(contributions: KernelContribution[]): MonthGroup[] {
-  const sorted = [...contributions].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const sorted = [...contributions].sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
   const groups: MonthGroup[] = [];
   for (const c of sorted) {
     const key = c.date.slice(0, 7);
@@ -113,7 +113,7 @@ export default function Timeline({ contributions }: { contributions: KernelContr
               <span className="tl-month-year">{group.year}</span>
             </h2>
             <span className="text-mono tl-month-count">
-              {group.items.length} {group.items.length === 1 ? 'PATCH' : 'PATCHES'}
+              {patchCount(group.items)} {patchCount(group.items) === 1 ? 'PATCH' : 'PATCHES'}
             </span>
           </header>
 

@@ -5,6 +5,7 @@ import { siteConfig } from '@/lib/config';
 import { experiences } from '@/lib/experience';
 
 const STATE_LABELS: Record<string, string> = {
+  nexigence: 'ARCHITECTING',
   sentinal: 'PROTOTYPING',
   samsung:  'SCALING',
   gsoc:     'CONTRIBUTING',
@@ -116,7 +117,7 @@ export default function Experience() {
 
   return (
     /*
-     * Outer section is tall (330vh) — this is the scroll budget.
+     * Outer section height is the scroll budget — ~50vh per card plus the pin.
      * The inner sticky container pins to the viewport for the full scroll budget,
      * which is how the horizontal animation feels slow and deliberate.
      */
@@ -124,7 +125,7 @@ export default function Experience() {
       id="experience"
       ref={sectionRef}
       aria-labelledby="experience-heading"
-      style={{ position: 'relative', height: '330vh' }}
+      style={{ position: 'relative', height: `${130 + visible.length * 50}vh` }}
     >
       {/* ── Sticky viewport holder ──────────────────────────────────────────── */}
       <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>

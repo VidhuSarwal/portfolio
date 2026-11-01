@@ -1,69 +1,40 @@
 {
   "meta": {
-    "total": 10,
+    "total": 12,
     "merged": 9,
     "rfc": 0,
-    "pending": 1
+    "pending": 3
   },
   "contributions": [
     {
-      "id": "patch-001",
-      "title": "iio: light: al3010: fix incorrect scale for the highest gain range",
+      "id": "patch-010",
+      "title": "iio: proximity: Add Benewake TF-Luna LiDAR driver",
       "subsystem": "IIO",
-      "date": "2026-07-04",
-      "status": "merged",
-      "version": "v7.2",
-      "description": "The al3010 ambient light sensor driver encoded the highest gain range scale as {0, 1187200}, but IIO_VAL_INT_PLUS_MICRO requires the micro part to be below 1,000,000. The malformed entry caused writes to return -EINVAL, making the top gain range impossible to select from userspace and reporting a bogus value on read. Fixed by re-encoding as {1, 187200}. Marked for backport to stable.",
-      "lore_url": "https://lore.kernel.org/all/20260704115245.11167-1-vidhu.linux@gmail.com/"
-    },
-    {
-      "id": "patch-002",
-      "title": "staging: media: ipu7: fix pm_runtime refcount leak in ipu7_init_fw_code_region_by_sys()",
-      "subsystem": "STAGING",
-      "date": "2026-07-04",
-      "status": "merged",
+      "date": "2026-10-20",
+      "status": "pending",
       "version": null,
-      "description": "ipu7_init_fw_code_region_by_sys() called pm_runtime_get_sync(), which increments the runtime-PM usage counter even when resume fails. The error path returned without a matching pm_runtime_put(), leaking a reference on every failed resume and eventually preventing the device from ever suspending. Fixed by switching to pm_runtime_resume_and_get(), which drops the reference automatically on failure — consistent with the sibling ipu6 driver.",
-      "lore_url": "https://lore.kernel.org/all/20260704083031.8524-2-vidhu.linux@gmail.com/"
+      "description": "A new IIO driver for the Benewake TF-Luna, a single-point time-of-flight LiDAR that measures 0.2 m to 8 m over I2C. The sensor runs in trigger mode: each read starts one measurement, waits for the timestamp register to change, then reads distance and signal strength together, because in continuous mode a read can catch the result registers half-updated unless it is synchronised to the data-ready pin. When the signal is too weak the sensor reports a dummy distance of 0, so those readings, and overexposed ones, return -ENODATA instead of a wrong distance. Probe reads the mode register back after setting it, since the sensor silently drops writes it is not ready for. Posted as a 3-patch series with the devicetree binding and the benewake vendor prefix; in v1 review the devicetree maintainer acked the vendor prefix and reviewed the binding.",
+      "lore_url": "https://lore.kernel.org/all/20261020-tf-luna-v1-0-53a88f93db24@gmail.com/",
+      "patches": 3
     },
     {
-      "id": "patch-003",
-      "title": "staging: media: ipu7: fix pm_runtime refcount leak in ipu7_resume()",
-      "subsystem": "STAGING",
-      "date": "2026-07-04",
-      "status": "merged",
-      "version": null,
-      "description": "A second pm_runtime refcount bug in the IPU7 driver: ipu7_resume() called pm_runtime_get_sync() and returned without restoring the counter on error, leaking the reference on every failed resume. Fixed with pm_runtime_resume_and_get() while preserving the intentional return-0-on-error behaviour — resume callbacks should not propagate failures to the PM core. Part of a two-patch series with the companion fix above.",
-      "lore_url": "https://lore.kernel.org/all/20260704083031.8524-3-vidhu.linux@gmail.com/"
-    },
-    {
-      "id": "patch-004",
-      "title": "iio: light: ltrf216a: fix runtime PM reference leak in error path",
+      "id": "patch-009",
+      "title": "iio: humidity: am2315: fix negative temperature decoding",
       "subsystem": "IIO",
-      "date": "2026-07-13",
+      "date": "2026-09-28",
       "status": "merged",
       "version": null,
-      "description": "ltrf216a_get_lux() acquires a runtime PM reference via ltrf216a_set_power_state(data, true) but returns early without releasing it when ltrf216a_read_data() fails. Every failed read leaks one PM reference, eventually preventing the device from autosuspending. Fixed by adding the matching ltrf216a_set_power_state(data, false) in the error branch so the usage count is balanced on both success and failure paths.",
-      "lore_url": "https://lore.kernel.org/all/20260713022829.234370-1-vidhu.linux@gmail.com/"
+      "description": "The AM2315/AM2320 report temperature in sign-magnitude form: bit 15 is the sign and bits 14-0 are the magnitude in 0.1 °C steps. am2315_read_data() stored the raw value straight into an s16, so every reading below zero was decoded as two's complement and came out wildly wrong (-0.1 °C read as -3276.7 °C), on both the read_raw and triggered buffer paths. Fixed by decoding the sign bit before storing the value; positive readings are unchanged. Other, non-kernel drivers for the same sensor hit this bug when it was placed in a freezer. Applied by the IIO maintainer and marked for stable.",
+      "lore_url": "https://lore.kernel.org/all/20260928142450.103799-1-vidhu.linux@gmail.com/"
     },
     {
-      "id": "patch-005",
-      "title": "fs/ntfs3: prevent positive E_NTFS_NONRESIDENT from reaching writeback error handling",
-      "subsystem": "NTFS3",
-      "date": "2026-07-13",
-      "status": "merged",
-      "version": null,
-      "description": "attr_data_write_resident() returns ntfs3's private positive status code E_NTFS_NONRESIDENT (556) when a race between is_resident() and attr_make_nonresident() leaves the DATA attribute non-resident mid-writeback. ntfs_writepages() passed that value straight into generic writeback error handling, which expects 0 or a negative errno, so it tripped WARN_ON_ONCE(err > 0) in mapping_set_error() and writeback_iter(): a crash reported by syzbot. Sent as an RFC asking whether the path should fail or retry. The fix translates positive E_NTFS_* codes to -EIO before the error is recorded; in review, -EIO was kept over EFSCORRUPTED because the filesystem stays consistent and no metadata is corrupted. Applied by the ntfs3 maintainer.",
-      "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
-    },
-    {
-      "id": "patch-006",
-      "title": "iio: light: opt4060: Reject integration times with a non-zero seconds part",
+      "id": "patch-008",
+      "title": "iio: light: opt4060: Fix incorrect register name in threshold read error message",
       "subsystem": "IIO",
       "date": "2026-07-15",
       "status": "merged",
       "version": null,
-      "description": "write_raw() for IIO_CHAN_INFO_INT_TIME uses IIO_VAL_INT_PLUS_MICRO encoding (val + val2×10⁻⁶), but only examines val2 and never validates val. All legal integration times for this chip have a seconds part of zero, so any non-zero val is by definition invalid — yet it was silently discarded and success returned, programming the wrong time. Fixed by returning -EINVAL early when val is non-zero, matching the IIO idiom used in sibling drivers. Marked for stable backport.",
+      "description": "The second block in opt4060_get_thresholds() reads the HIGH threshold register but its dev_err() failure message reads \"Failed to read THRESHOLD_LOW.\" — copy-pasted from the LOW block immediately above. Purely diagnostic: the return value and side effects are unchanged. Fixed by correcting the string to THRESHOLD_HIGH so dmesg points at the right register on failure. Marked for stable backport.",
       "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
     },
     {
@@ -77,34 +48,64 @@
       "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
     },
     {
-      "id": "patch-008",
-      "title": "iio: light: opt4060: Fix incorrect register name in threshold read error message",
+      "id": "patch-006",
+      "title": "iio: light: opt4060: Reject integration times with a non-zero seconds part",
       "subsystem": "IIO",
       "date": "2026-07-15",
       "status": "merged",
       "version": null,
-      "description": "The second block in opt4060_get_thresholds() reads the HIGH threshold register but its dev_err() failure message reads \"Failed to read THRESHOLD_LOW.\" — copy-pasted from the LOW block immediately above. Purely diagnostic: the return value and side effects are unchanged. Fixed by correcting the string to THRESHOLD_HIGH so dmesg points at the right register on failure. Marked for stable backport.",
+      "description": "write_raw() for IIO_CHAN_INFO_INT_TIME uses IIO_VAL_INT_PLUS_MICRO encoding (val + val2×10⁻⁶), but only examines val2 and never validates val. All legal integration times for this chip have a seconds part of zero, so any non-zero val is by definition invalid — yet it was silently discarded and success returned, programming the wrong time. Fixed by returning -EINVAL early when val is non-zero, matching the IIO idiom used in sibling drivers. Marked for stable backport.",
       "lore_url": "https://lore.kernel.org/all/20260715011544.281148-1-vidhu.linux@gmail.com/"
     },
     {
-      "id": "patch-009",
-      "title": "iio: humidity: am2315: fix negative temperature decoding",
-      "subsystem": "IIO",
-      "date": "2026-09-28",
+      "id": "patch-005",
+      "title": "fs/ntfs3: prevent positive E_NTFS_NONRESIDENT from reaching writeback error handling",
+      "subsystem": "NTFS3",
+      "date": "2026-07-13",
       "status": "merged",
       "version": null,
-      "description": "The AM2315/AM2320 report temperature in sign-magnitude form: bit 15 is the sign and bits 14-0 are the magnitude in 0.1 °C steps. am2315_read_data() stored the raw value straight into an s16, so every reading below zero was decoded as two's complement and came out wildly wrong (-0.1 °C read as -3276.7 °C), on both the read_raw and triggered buffer paths. Fixed by decoding the sign bit before storing the value; positive readings are unchanged. Other, non-kernel drivers for the same sensor hit this bug when it was placed in a freezer. Applied by the IIO maintainer and marked for stable.",
-      "lore_url": "https://lore.kernel.org/all/20260928142450.103799-1-vidhu.linux@gmail.com/"
+      "description": "attr_data_write_resident() returns ntfs3's private positive status code E_NTFS_NONRESIDENT (556) when a race between is_resident() and attr_make_nonresident() leaves the DATA attribute non-resident mid-writeback. ntfs_writepages() passed that value straight into generic writeback error handling, which expects 0 or a negative errno, so it tripped WARN_ON_ONCE(err > 0) in mapping_set_error() and writeback_iter(): a crash reported by syzbot. Sent as an RFC asking whether the path should fail or retry. The fix translates positive E_NTFS_* codes to -EIO before the error is recorded; in review, -EIO was kept over EFSCORRUPTED because the filesystem stays consistent and no metadata is corrupted. Applied by the ntfs3 maintainer.",
+      "lore_url": "https://lore.kernel.org/all/20260713084140.249515-1-vidhu.linux@gmail.com/"
     },
     {
-      "id": "patch-010",
-      "title": "iio: proximity: Add Benewake TF-Luna LiDAR driver",
+      "id": "patch-004",
+      "title": "iio: light: ltrf216a: fix runtime PM reference leak in error path",
       "subsystem": "IIO",
-      "date": "2026-10-20",
-      "status": "pending",
+      "date": "2026-07-13",
+      "status": "merged",
       "version": null,
-      "description": "A new IIO driver for the Benewake TF-Luna, a single-point time-of-flight LiDAR that measures 0.2 m to 8 m over I2C. The sensor runs in trigger mode: each read starts one measurement, waits for the timestamp register to change, then reads distance and signal strength together, because in continuous mode a read can catch the result registers half-updated unless it is synchronised to the data-ready pin. When the signal is too weak the sensor reports a dummy distance of 0, so those readings, and overexposed ones, return -ENODATA instead of a wrong distance. Probe reads the mode register back after setting it, since the sensor silently drops writes it is not ready for. Posted as a 3-patch series with the devicetree binding and the benewake vendor prefix.",
-      "lore_url": "https://lore.kernel.org/all/20261020-tf-luna-v1-0-53a88f93db24@gmail.com/"
+      "description": "ltrf216a_get_lux() acquires a runtime PM reference via ltrf216a_set_power_state(data, true) but returns early without releasing it when ltrf216a_read_data() fails. Every failed read leaks one PM reference, eventually preventing the device from autosuspending. Fixed by adding the matching ltrf216a_set_power_state(data, false) in the error branch so the usage count is balanced on both success and failure paths.",
+      "lore_url": "https://lore.kernel.org/all/20260713022829.234370-1-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-003",
+      "title": "staging: media: ipu7: fix pm_runtime refcount leak in ipu7_resume()",
+      "subsystem": "STAGING",
+      "date": "2026-07-04",
+      "status": "merged",
+      "version": null,
+      "description": "A second pm_runtime refcount bug in the IPU7 driver: ipu7_resume() called pm_runtime_get_sync() and returned without restoring the counter on error, leaking the reference on every failed resume. Fixed with pm_runtime_resume_and_get() while preserving the intentional return-0-on-error behaviour — resume callbacks should not propagate failures to the PM core. Part of a two-patch series with the companion fix above.",
+      "lore_url": "https://lore.kernel.org/all/20260704083031.8524-3-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-002",
+      "title": "staging: media: ipu7: fix pm_runtime refcount leak in ipu7_init_fw_code_region_by_sys()",
+      "subsystem": "STAGING",
+      "date": "2026-07-04",
+      "status": "merged",
+      "version": null,
+      "description": "ipu7_init_fw_code_region_by_sys() called pm_runtime_get_sync(), which increments the runtime-PM usage counter even when resume fails. The error path returned without a matching pm_runtime_put(), leaking a reference on every failed resume and eventually preventing the device from ever suspending. Fixed by switching to pm_runtime_resume_and_get(), which drops the reference automatically on failure — consistent with the sibling ipu6 driver.",
+      "lore_url": "https://lore.kernel.org/all/20260704083031.8524-2-vidhu.linux@gmail.com/"
+    },
+    {
+      "id": "patch-001",
+      "title": "iio: light: al3010: fix incorrect scale for the highest gain range",
+      "subsystem": "IIO",
+      "date": "2026-07-04",
+      "status": "merged",
+      "version": "v7.2",
+      "description": "The al3010 ambient light sensor driver encoded the highest gain range scale as {0, 1187200}, but IIO_VAL_INT_PLUS_MICRO requires the micro part to be below 1,000,000. The malformed entry caused writes to return -EINVAL, making the top gain range impossible to select from userspace and reporting a bogus value on read. Fixed by re-encoding as {1, 187200}. Marked for backport to stable.",
+      "lore_url": "https://lore.kernel.org/all/20260704115245.11167-1-vidhu.linux@gmail.com/"
     }
   ]
 }

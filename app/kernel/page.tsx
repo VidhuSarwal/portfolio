@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import KernelNav from './KernelNav';
 import KernelView from './KernelView';
-import { STATUS_META, statusesPresent, type KernelContribution } from './kernel';
+import { STATUS_META, patchCount, statusesPresent, type KernelContribution } from './kernel';
 import contributionsData from '@/data/kernel-contributions.json';
 import { pageMeta } from '@/lib/metadata';
 
@@ -19,11 +19,12 @@ export default function KernelPage() {
 
   // Derive counts per present status from the actual array — never drift from
   // what's rendered, and never drop a status the header didn't hardcode.
-  const total = contributions.length;
+  // Counted in patches, so a 3-patch series adds 3.
+  const total = patchCount(contributions);
   const counts = statusesPresent(contributions).map((s) => ({
     status: s,
     label: STATUS_META[s].label,
-    count: contributions.filter((p) => p.status === s).length,
+    count: patchCount(contributions.filter((p) => p.status === s)),
   }));
 
   return (

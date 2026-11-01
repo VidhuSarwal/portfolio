@@ -1,3 +1,6 @@
+import contributionsData from '@/data/kernel-contributions.json';
+import { patchCount, type KernelContribution } from '@/app/kernel/kernel';
+
 export type Experience = {
   id: string;
   company: string;
@@ -10,31 +13,38 @@ export type Experience = {
   configKey: 'showSamsung' | 'showGSOC' | 'showLKMP' | null;
 };
 
-// Chronological order — oldest to newest (scroll narrative: growth over time)
+// Newest first — the current role leads the horizontal scroll, older work
+// follows. Kernel figures are derived from the patch log so the card never
+// drifts from /kernel.
+const kernel = (contributionsData as { contributions: KernelContribution[] }).contributions;
+const kernelSent     = patchCount(kernel);
+const kernelAccepted = patchCount(kernel.filter((c) => c.status === 'merged'));
+
 export const experiences: Experience[] = [
   {
-    id: 'sentinal',
-    company: 'Sentinal Innovations',
-    role: 'Engineering Intern — Embedded Systems & IoT',
-    dateRange: 'Jun 2024 – Aug 2024',
-    year: '2024',
+    id: 'nexigence',
+    company: 'Nexigence AI',
+    role: 'Platform Engineering Lead — Systems · Infrastructure',
+    dateRange: 'Oct 2026 – Present',
+    year: '2026',
+    // Product is under NDA — keep this to scope and responsibilities only.
     description:
-      'Built ESP32 firmware in Embedded C for an IoT relay control system with a real-time monitoring dashboard. Shipped to 50+ homes, cutting energy use 25%. Designed a clean firmware API layer keeping hardware and application layers independently deployable.',
-    tags: ['Embedded C', 'ESP32', 'MQTT', 'IoT', 'FreeRTOS'],
-    logoSlug: 'sentinal',
+      'Architecting the Linux platform layer of an early-stage operating system: system design, kernel and host configuration, isolation, networking and performance. Leading platform engineering end to end, from core architecture decisions to the build and CI infrastructure the team ships on.',
+    tags: ['Linux', 'Systems Architecture', 'Kernel', 'Networking', 'CI/CD'],
+    logoSlug: 'nexigence',
     configKey: null,
   },
   {
-    id: 'samsung',
-    company: 'Samsung R&D',
-    role: 'Research Intern — AI Infrastructure (PRISM)',
-    dateRange: 'Jan 2025 – Feb 2026',
-    year: '2025',
+    id: 'lkmp',
+    company: 'Linux Foundation',
+    role: 'Kernel Developer — LFX · Linux Kernel',
+    dateRange: 'Jun 2026 – Present',
+    year: '2026',
     description:
-      'Sole owner of a 61k+ LOC production async Python platform: LangGraph multi-agent orchestration, hybrid BM25 + ChromaDB retrieval, Qwen-VL document parsing, SQL spreadsheet querying. Cut end-to-end latency 70% via async redesign. Adopted by multiple Samsung teams as an internal NotebookLM replacement.',
-    tags: ['Python', 'LangGraph', 'ChromaDB', 'Qwen-VL', 'React', 'Socket.io'],
-    logoSlug: 'samsung',
-    configKey: 'showSamsung',
+      `${kernelSent} patches sent upstream through review on lore.kernel.org, ${kernelAccepted} accepted across IIO sensor drivers, staging and the NTFS3 filesystem, some backported to stable. Wrote a new IIO driver for the Benewake TF-Luna LiDAR over I2C, tested on a Raspberry Pi 4 — the 3-patch series is in review. Fixed an am2315 bug that read -0.1 °C as -3276.7.`,
+    tags: ['C', 'Linux Kernel', 'IIO', 'Device Tree', 'I2C', 'LKML'],
+    logoSlug: 'linux',
+    configKey: 'showLKMP',
   },
   {
     id: 'gsoc',
@@ -49,15 +59,27 @@ export const experiences: Experience[] = [
     configKey: 'showGSOC',
   },
   {
-    id: 'lkmp',
-    company: 'Linux Foundation',
-    role: 'Kernel Developer Mentee — LFX Mentorship',
-    dateRange: 'Jun 2026 – Present',
-    year: '2026',
+    id: 'samsung',
+    company: 'Samsung R&D',
+    role: 'Research Intern — AI Infrastructure (PRISM)',
+    dateRange: 'Jan 2025 – Feb 2026',
+    year: '2025',
     description:
-      'Selected for the Linux Kernel Mentorship Program under maintainer mentorship. Contributing to kernel bug triage, fixes, and upstream patch submission — building on mainline-upstreamed work from Google Summer of Code.',
-    tags: ['C', 'Linux Kernel', 'Git', 'Patch Workflow', 'LKML'],
-    logoSlug: 'linux',
-    configKey: 'showLKMP',
+      'Sole owner of a 61k+ LOC production async Python platform: LangGraph multi-agent orchestration, hybrid BM25 + ChromaDB retrieval, Qwen-VL document parsing, SQL spreadsheet querying. Cut end-to-end latency 70% via async redesign. Adopted by multiple Samsung teams as an internal NotebookLM replacement.',
+    tags: ['Python', 'LangGraph', 'ChromaDB', 'Qwen-VL', 'React', 'Socket.io'],
+    logoSlug: 'samsung',
+    configKey: 'showSamsung',
+  },
+  {
+    id: 'sentinal',
+    company: 'Sentinal Innovations',
+    role: 'Engineering Intern — Embedded Systems & IoT',
+    dateRange: 'Jun 2024 – Aug 2024',
+    year: '2024',
+    description:
+      'Built ESP32 firmware in Embedded C for an IoT relay control system with a real-time monitoring dashboard. Shipped to 50+ homes, cutting energy use 25%. Designed a clean firmware API layer keeping hardware and application layers independently deployable.',
+    tags: ['Embedded C', 'ESP32', 'MQTT', 'IoT', 'FreeRTOS'],
+    logoSlug: 'sentinal',
+    configKey: null,
   },
 ];

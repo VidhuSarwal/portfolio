@@ -2,7 +2,7 @@
 // social cards (app/twitter-image.tsx and app/opengraph-image.tsx, `short` /
 // `org`). Edit here and all three stay in sync.
 export const CREDENTIALS = [
-  { index: '01', label: 'LINUX KERNEL MENTORSHIP PROGRAM · LFX', year: "'26", short: "LFX '26", org: 'Linux Kernel Mentorship' },
+  { index: '01', label: 'LINUX KERNEL DEVELOPER · LFX', year: "'26", short: "LFX '26", org: 'Kernel Developer' },
   { index: '02', label: 'GOOGLE SUMMER OF CODE · BEAGLEBOARD.ORG', year: "'25", short: "GSoC '25", org: 'BeagleBoard.org' },
   { index: '03', label: 'SAMSUNG R&D · PRISM RESEARCH INTERN', year: "'25", short: "Samsung PRISM '25", org: 'R&D Research Intern' },
 ] as const;

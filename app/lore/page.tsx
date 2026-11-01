@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import LoreChrome from './LoreChrome';
 import { loreContributions } from './lore';
-import { STATUS_META } from '../kernel/kernel';
+import { STATUS_META, patchCount } from '../kernel/kernel';
 import { pageMeta } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMeta({
@@ -19,7 +19,7 @@ export default function LorePage() {
       <main style={{ background: '#000', color: '#fff', maxWidth: '900px', margin: '0 auto', padding: '2em 1em' }}>
         <h1>Vidhu Sarwal — Linux Kernel Patches</h1>
         <p>
-          {contributions.length} patches, submitted via{' '}
+          {patchCount(contributions)} patches, submitted via{' '}
           <a href="https://lore.kernel.org/" target="_blank" rel="noopener noreferrer">lore.kernel.org</a> / git send-email.
         </p>
         <p style={{ fontSize: '0.85em', color: '#888' }}>(Descriptions automatically summarised using AI)</p>

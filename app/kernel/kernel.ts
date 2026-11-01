@@ -12,6 +12,9 @@ export interface KernelContribution {
   version: string | null;
   description: string;
   lore_url: string;
+  // A series (e.g. a new driver + its DT binding) is one row but several
+  // patches; omitted means a single patch.
+  patches?: number;
 }
 
 type Tone = 'accent' | 'secondary' | 'tertiary';
@@ -51,4 +54,10 @@ export function statusesPresent(contributions: KernelContribution[]): KernelStat
 // filter chips so a chip is never a dead control.
 export function subsystemsPresent(contributions: KernelContribution[]): string[] {
   return [...new Set(contributions.map((c) => c.subsystem))].sort();
+}
+
+// Patches, not rows — a 3-patch series counts as 3. Every user-facing count
+// goes through this so the site matches what was actually sent upstream.
+export function patchCount(contributions: KernelContribution[]): number {
+  return contributions.reduce((n, c) => n + (c.patches ?? 1), 0);
 }

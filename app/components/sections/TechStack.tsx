@@ -36,63 +36,75 @@ const NODE_FS: Record<NodeSize, number> = { XL: 13, L: 12, M: 11, S: 10 };
 const EDGE_OPACITY: Record<EdgeWeight, number> = { strong: 0.14, medium: 0.08, weak: 0.045 };
 const EDGE_WIDTH:   Record<EdgeWeight, number> = { strong: 1.0,  medium: 0.7,  weak: 0.5   };
 
-// ── 22-node catalog ──────────────────────────────────────────────────────────
+// ── 27-node catalog ──────────────────────────────────────────────────────────
+// Sourced from the resume; tooltips cite where each skill was actually used.
 const NODES: NodeDef[] = [
-  // SYSTEMS — left spine
-  { id:'linux',      label:'Linux Kernel', cluster:'systems', size:'L',  depth:0.20, phase:0.0, pos:{x:0.17, y:0.38}, period:'Systems · 2024–', usedIn:()=>"GSoC '25, LKMP" },
-  { id:'c',          label:'C',            cluster:'systems', size:'L',  depth:0.15, phase:1.2, pos:{x:0.30, y:0.47}, period:'Systems · 2024–', usedIn:()=>"GSoC '25, ESP32" },
-  { id:'cpp',        label:'C++',          cluster:'systems', size:'M',  depth:0.40, phase:0.7, pos:{x:0.23, y:0.42}, period:'Systems · 2024–', usedIn:()=>"GSoC '25" },
-  { id:'embedded',   label:'Embedded C',   cluster:'systems', size:'M',  depth:0.50, phase:2.1, pos:{x:0.14, y:0.60}, period:'Systems · 2024–', usedIn:()=>"ESP32, Sentinal" },
-  { id:'arm',        label:'ARM',          cluster:'systems', size:'S',  depth:0.70, phase:1.8, pos:{x:0.06, y:0.46}, period:'Systems · 2024–', usedIn:()=>"GSoC '25" },
-  { id:'buildroot',  label:'Buildroot',    cluster:'systems', size:'S',  depth:0.80, phase:3.2, pos:{x:0.05, y:0.68}, period:'Systems · 2024–', usedIn:()=>"GSoC '25" },
+  // SYSTEMS — left spine (kernel, drivers, embedded)
+  { id:'linux',      label:'Linux Kernel', cluster:'systems', size:'L',  depth:0.20, phase:0.0, pos:{x:0.17, y:0.38}, period:'Systems · 2024–', usedIn:()=>"LFX kernel patches, platform work" },
+  { id:'iio',        label:'IIO Drivers',  cluster:'systems', size:'M',  depth:0.35, phase:2.4, pos:{x:0.06, y:0.34}, period:'Systems · 2026–', usedIn:()=>"TF-Luna LiDAR driver, sensor fixes" },
+  { id:'devicetree', label:'Device Tree',  cluster:'systems', size:'S',  depth:0.70, phase:0.4, pos:{x:0.06, y:0.56}, period:'Systems · 2026–', usedIn:()=>"TF-Luna binding, Pi overlays" },
+  { id:'c',          label:'C',            cluster:'systems', size:'L',  depth:0.15, phase:1.2, pos:{x:0.30, y:0.47}, period:'Systems · 2024–', usedIn:()=>"Kernel patches, GSoC '25, firmware" },
+  { id:'cpp',        label:'C++',          cluster:'systems', size:'S',  depth:0.40, phase:0.7, pos:{x:0.24, y:0.38}, period:'Systems · 2024–', usedIn:()=>"GSoC '25" },
+  { id:'embedded',   label:'Embedded C',   cluster:'systems', size:'M',  depth:0.50, phase:2.1, pos:{x:0.15, y:0.60}, period:'Systems · 2024–', usedIn:()=>"ESP32 + FreeRTOS, STM32" },
+  { id:'arm',        label:'ARM64',        cluster:'systems', size:'S',  depth:0.70, phase:1.8, pos:{x:0.10, y:0.47}, period:'Systems · 2024–', usedIn:()=>"BeagleBoard, Raspberry Pi, STM32" },
+  { id:'buildroot',  label:'Buildroot',    cluster:'systems', size:'S',  depth:0.80, phase:3.2, pos:{x:0.06, y:0.69}, period:'Systems · 2025–', usedIn:()=>"GSoC '25 CI images" },
+  { id:'ebpf',       label:'eBPF',         cluster:'systems', size:'M',  depth:0.30, phase:3.6, pos:{x:0.33, y:0.64}, period:'Systems · 2026–', usedIn:()=>"Wiremark" },
   // BACKEND — center band
   { id:'python',     label:'Python',       cluster:'backend', size:'XL', depth:0.10, phase:0.5, pos:{x:0.57, y:0.26}, period:'Backend · 2023–', usedIn:(s)=>s?"Samsung PRISM, GitScope, more":"GitScope, VaultCrypt, more" },
-  { id:'go',         label:'Go',           cluster:'backend', size:'L',  depth:0.20, phase:1.5, pos:{x:0.74, y:0.18}, period:'Backend · 2024–', usedIn:()=>"VaultCrypt" },
-  { id:'typescript', label:'TypeScript',   cluster:'backend', size:'M',  depth:0.45, phase:2.8, pos:{x:0.50, y:0.12}, period:'Backend · 2024–', usedIn:(s)=>s?"Samsung PRISM":"This portfolio" },
+  { id:'go',         label:'Go',           cluster:'backend', size:'L',  depth:0.20, phase:1.5, pos:{x:0.74, y:0.18}, period:'Backend · 2024–', usedIn:()=>"VaultCrypt, Wiremark" },
+  { id:'typescript', label:'TypeScript',   cluster:'backend', size:'S',  depth:0.45, phase:2.8, pos:{x:0.50, y:0.12}, period:'Backend · 2024–', usedIn:(s)=>s?"Samsung PRISM":"This portfolio" },
   { id:'fastapi',    label:'FastAPI',      cluster:'backend', size:'M',  depth:0.35, phase:0.3, pos:{x:0.64, y:0.50}, period:'Backend · 2024–', usedIn:(s)=>s?"Samsung PRISM, GitScope":"GitScope" },
   { id:'async',      label:'async',        cluster:'backend', size:'S',  depth:0.60, phase:1.1, pos:{x:0.52, y:0.63}, period:'Backend · 2024–', usedIn:(s)=>s?"Samsung PRISM, GitScope":"GitScope" },
-  { id:'websockets', label:'WebSockets',   cluster:'backend', size:'S',  depth:0.75, phase:2.4, pos:{x:0.68, y:0.72}, period:'Backend · 2024–', usedIn:(s)=>s?"Samsung PRISM":"Streaming services" },
+  { id:'websockets', label:'WebSockets',   cluster:'backend', size:'S',  depth:0.75, phase:2.4, pos:{x:0.68, y:0.70}, period:'Backend · 2024–', usedIn:(s)=>s?"Samsung PRISM":"Streaming services" },
   // AI / ML — right arc
   { id:'langgraph',  label:'LangGraph',    cluster:'ai',      size:'L',  depth:0.25, phase:1.6, pos:{x:0.82, y:0.38}, period:'AI/ML · 2024–',   usedIn:(s)=>s?"Samsung PRISM":"Worklet Generator Agent" },
   { id:'rag',        label:'RAG',          cluster:'ai',      size:'M',  depth:0.40, phase:0.9, pos:{x:0.83, y:0.56}, period:'AI/ML · 2024–',   usedIn:(s)=>s?"Samsung PRISM":"GitScope" },
   { id:'chromadb',   label:'ChromaDB',     cluster:'ai',      size:'M',  depth:0.50, phase:2.0, pos:{x:0.91, y:0.26}, period:'AI/ML · 2024–',   usedIn:(s)=>s?"Samsung PRISM, GitScope":"GitScope" },
-  { id:'embeddings', label:'Embeddings',   cluster:'ai',      size:'S',  depth:0.70, phase:3.0, pos:{x:0.88, y:0.68}, period:'AI/ML · 2024–',   usedIn:(s)=>s?"GitScope, Samsung PRISM":"GitScope" },
-  { id:'treesitter', label:'Tree-sitter',  cluster:'ai',      size:'S',  depth:0.80, phase:1.3, pos:{x:0.77, y:0.80}, period:'AI/ML · 2024–',   usedIn:()=>"GitScope" },
-  // INFRA — lower band
-  { id:'docker',     label:'Docker',       cluster:'infra',   size:'M',  depth:0.35, phase:0.6, pos:{x:0.38, y:0.81}, period:'Infra · 2023–',   usedIn:()=>"Most deploys" },
-  { id:'kubernetes', label:'Kubernetes',   cluster:'infra',   size:'S',  depth:0.65, phase:2.6, pos:{x:0.52, y:0.90}, period:'Infra · 2024',    usedIn:()=>"Familiar" },
-  { id:'postgres',   label:'PostgreSQL',   cluster:'infra',   size:'S',  depth:0.70, phase:1.9, pos:{x:0.23, y:0.87}, period:'Infra · 2024–',   usedIn:()=>"Backend services" },
-  { id:'mongodb',    label:'MongoDB',      cluster:'infra',   size:'S',  depth:0.75, phase:3.5, pos:{x:0.10, y:0.78}, period:'Infra · 2024–',   usedIn:()=>"VaultCrypt" },
+  { id:'embeddings', label:'Embeddings',   cluster:'ai',      size:'S',  depth:0.70, phase:3.0, pos:{x:0.89, y:0.70}, period:'AI/ML · 2024–',   usedIn:(s)=>s?"GitScope, Samsung PRISM":"GitScope" },
+  { id:'treesitter', label:'Tree-sitter',  cluster:'ai',      size:'S',  depth:0.80, phase:1.3, pos:{x:0.79, y:0.82}, period:'AI/ML · 2024–',   usedIn:()=>"GitScope" },
+  // INFRA — lower band (virtualization, networking, deploy)
+  { id:'firecracker',label:'Firecracker',  cluster:'infra',   size:'M',  depth:0.30, phase:0.8, pos:{x:0.52, y:0.85}, period:'Infra · 2026–',   usedIn:()=>"Virtualization platform work" },
+  { id:'kvm',        label:'KVM / QEMU',   cluster:'infra',   size:'S',  depth:0.60, phase:2.2, pos:{x:0.65, y:0.90}, period:'Infra · 2026–',   usedIn:()=>"Virtualization platform work" },
+  { id:'nftables',   label:'nftables',     cluster:'infra',   size:'S',  depth:0.65, phase:2.9, pos:{x:0.43, y:0.73}, period:'Infra · 2026–',   usedIn:()=>"Platform networking" },
+  { id:'docker',     label:'Docker',       cluster:'infra',   size:'M',  depth:0.35, phase:0.6, pos:{x:0.36, y:0.83}, period:'Infra · 2023–',   usedIn:()=>"Most deploys" },
+  { id:'aws',        label:'AWS EC2',      cluster:'infra',   size:'S',  depth:0.70, phase:1.9, pos:{x:0.22, y:0.87}, period:'Infra · 2025–',   usedIn:()=>"VaultCrypt" },
+  { id:'mongodb',    label:'MongoDB',      cluster:'infra',   size:'S',  depth:0.75, phase:3.5, pos:{x:0.09, y:0.80}, period:'Infra · 2024–',   usedIn:()=>"VaultCrypt" },
   // CENTER — bridge node
   { id:'git',        label:'Git',          cluster:'center',  size:'M',  depth:0.10, phase:4.0, pos:{x:0.44, y:0.50}, period:'Universal',        usedIn:()=>"Every project" },
 ];
 
-// ── 22-edge curated graph ─────────────────────────────────────────────────────
-// Removed from original 30: typescript↔websockets, python↔go, chromadb↔embeddings,
-// langgraph↔embeddings, docker↔postgres, git↔linux, git↔go, postgres↔fastapi
+// ── Curated edges — each one is a real "used together" link ──────────────────
 const EDGES: EdgeDef[] = [
-  { a:'linux',     b:'c',          weight:'strong' },
-  { a:'linux',     b:'arm',        weight:'medium' },
-  { a:'linux',     b:'buildroot',  weight:'medium' },
-  { a:'c',         b:'cpp',        weight:'strong' },
-  { a:'c',         b:'embedded',   weight:'strong' },
-  { a:'embedded',  b:'arm',        weight:'medium' },
-  { a:'python',    b:'fastapi',    weight:'strong' },
-  { a:'python',    b:'async',      weight:'medium' },
-  { a:'fastapi',   b:'async',      weight:'medium' },
-  { a:'fastapi',   b:'websockets', weight:'medium' },
-  { a:'python',    b:'typescript', weight:'medium' },
-  { a:'python',    b:'langgraph',  weight:'strong' },
-  { a:'python',    b:'treesitter', weight:'weak'   },
-  { a:'python',    b:'embeddings', weight:'medium' },
-  { a:'langgraph', b:'rag',        weight:'strong' },
-  { a:'rag',       b:'chromadb',   weight:'strong' },
-  { a:'rag',       b:'embeddings', weight:'medium' },
-  { a:'docker',    b:'kubernetes', weight:'medium' },
-  { a:'mongodb',   b:'go',         weight:'weak'   },
-  { a:'git',       b:'python',     weight:'strong' },
-  { a:'git',       b:'c',          weight:'strong' },
-  { a:'git',       b:'docker',     weight:'medium' },
+  { a:'linux',       b:'c',           weight:'strong' },
+  { a:'linux',       b:'iio',         weight:'strong' },
+  { a:'iio',         b:'devicetree',  weight:'medium' },
+  { a:'linux',       b:'arm',         weight:'medium' },
+  { a:'linux',       b:'buildroot',   weight:'medium' },
+  { a:'linux',       b:'ebpf',        weight:'medium' },
+  { a:'c',           b:'cpp',         weight:'strong' },
+  { a:'c',           b:'embedded',    weight:'strong' },
+  { a:'embedded',    b:'arm',         weight:'medium' },
+  { a:'ebpf',        b:'go',          weight:'weak'   },
+  { a:'ebpf',        b:'nftables',    weight:'medium' },
+  { a:'firecracker', b:'kvm',         weight:'strong' },
+  { a:'firecracker', b:'nftables',    weight:'medium' },
+  { a:'firecracker', b:'ebpf',        weight:'medium' },
+  { a:'python',      b:'fastapi',     weight:'strong' },
+  { a:'python',      b:'async',       weight:'medium' },
+  { a:'fastapi',     b:'async',       weight:'medium' },
+  { a:'fastapi',     b:'websockets',  weight:'medium' },
+  { a:'python',      b:'typescript',  weight:'weak'   },
+  { a:'python',      b:'langgraph',   weight:'strong' },
+  { a:'python',      b:'treesitter',  weight:'weak'   },
+  { a:'python',      b:'embeddings',  weight:'medium' },
+  { a:'langgraph',   b:'rag',         weight:'strong' },
+  { a:'rag',         b:'chromadb',    weight:'strong' },
+  { a:'rag',         b:'embeddings',  weight:'medium' },
+  { a:'docker',      b:'aws',         weight:'medium' },
+  { a:'mongodb',     b:'go',          weight:'weak'   },
+  { a:'git',         b:'python',      weight:'strong' },
+  { a:'git',         b:'c',           weight:'strong' },
+  { a:'git',         b:'docker',      weight:'medium' },
 ];
 
 // ── Cluster background labels ─────────────────────────────────────────────────
@@ -762,10 +774,10 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MOBILE_CLUSTERS = [
-  { label: 'SYSTEMS',        sub: 'Kernel · Embedded · Hardware',      ids: ['linux','c','cpp','embedded','arm','buildroot'] },
+  { label: 'SYSTEMS',        sub: 'Kernel · Drivers · Embedded',       ids: ['linux','iio','devicetree','c','cpp','embedded','arm','buildroot','ebpf'] },
   { label: 'BACKEND',        sub: 'Distributed · Async · API',         ids: ['python','go','typescript','fastapi','async','websockets'] },
   { label: 'AI / ML',        sub: 'Retrieval · Multimodal · Agents',   ids: ['langgraph','rag','chromadb','embeddings','treesitter'] },
-  { label: 'INFRASTRUCTURE', sub: 'Deploy · Observe · Scale',          ids: ['docker','kubernetes','postgres','mongodb','git'] },
+  { label: 'INFRASTRUCTURE', sub: 'Virtualization · Networking · Deploy', ids: ['firecracker','kvm','nftables','docker','aws','mongodb','git'] },
 ];
 
 function MobileStack() {
@@ -792,7 +804,8 @@ function MobileStack() {
               const node = nodeById.get(id);
               if (!node) return null;
               return (
-                <span key={id}>
+                // inline-block keeps "Device Tree" / "KVM / QEMU" whole; lines break between items
+                <span key={id} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
                   {node.label}
                   {i < cluster.ids.length - 1 && (
                     <span style={{ color: 'var(--text-tertiary)', margin: '0 10px' }}>·</span>

@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { CardFrame, Mono, OG, OG_SIZE, VXMark, loadOgFonts } from './card';
 import {
   STATUS_META,
+  patchCount,
   statusesPresent,
   subsystemsPresent,
   type KernelContribution,
@@ -12,8 +13,8 @@ import {
 // when patches are added or change status.
 
 export function kernelCardAlt(contributions: KernelContribution[]): string {
-  const merged = contributions.filter((c) => c.status === 'merged').length;
-  return `Linux kernel contributions by Vidhu Sarwal — ${contributions.length} upstream patches, ${merged} merged.`;
+  const merged = patchCount(contributions.filter((c) => c.status === 'merged'));
+  return `Linux kernel contributions by Vidhu Sarwal — ${patchCount(contributions)} upstream patches, ${merged} merged.`;
 }
 
 export async function kernelCard({
@@ -28,9 +29,9 @@ export async function kernelCard({
   contributions: KernelContribution[];
 }) {
   const stats = [
-    { n: contributions.length, label: 'PATCHES', accent: false },
+    { n: patchCount(contributions), label: 'PATCHES', accent: false },
     ...statusesPresent(contributions).map((s) => ({
-      n: contributions.filter((c) => c.status === s).length,
+      n: patchCount(contributions.filter((c) => c.status === s)),
       label: STATUS_META[s].label,
       accent: s === 'merged',
     })),
