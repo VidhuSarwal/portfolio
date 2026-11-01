@@ -1175,7 +1175,7 @@ function drawCableTension(
 const WORDS = ['INFRA', '×', 'INTELLIGENCE'] as const;
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—/\\|';
 
-function WordReveal({ visible }: { visible: boolean }) {
+function WordReveal({ visible, instant }: { visible: boolean; instant: boolean }) {
   const [disp, setDisp] = useState<[string, string, string]>(() => [
     '·'.repeat(5),
     '×',
@@ -1193,7 +1193,11 @@ function WordReveal({ visible }: { visible: boolean }) {
     timers.current = [];
     rafs.current   = [];
 
-    if (visible) {
+    if (visible && instant) {
+      // Reduced motion: show the resolved words, no scramble
+      shown.current = true;
+      setDisp([WORDS[0], WORDS[1], WORDS[2]]);
+    } else if (visible) {
       shown.current = true;
 
       // Forward: INFRA → × → INTELLIGENCE
@@ -1264,7 +1268,7 @@ function WordReveal({ visible }: { visible: boolean }) {
       timers.current.forEach(clearTimeout);
       rafs.current.forEach(cancelAnimationFrame);
     };
-  }, [visible]);
+  }, [visible, instant]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -1316,9 +1320,11 @@ export default function BridgeOscilloscope() {
   const reduced    = useRef(false);
   const boxRef     = useRef<HTMLDivElement>(null);
   const [wordsVisible, setWordsVisible] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     reduced.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setReducedMotion(reduced.current);
     const section = sectionRef.current;
     const canvas  = canvasRef.current;
     if (!section || !canvas) return;
@@ -1462,7 +1468,11 @@ export default function BridgeOscilloscope() {
       }
       ctx!.restore();
     }
-    if (reduced.current) setWordsVisible(true);
+    if (reduced.current) {
+      // No zoom-out under reduced motion — show the framed drawing at rest
+      if (boxRef.current) boxRef.current.style.transform = 'none';
+      setWordsVisible(true);
+    }
 
     return () => {
       cancelAnimationFrame(animId.current);
@@ -1573,7 +1583,7 @@ export default function BridgeOscilloscope() {
         {/* Word reveal — below the box */}
         <div style={{ width: 'min(88vw, 1320px)', zIndex: 2 }}>
           <h2 id="bridge-heading" className="sr-only">Infra meets Intelligence</h2>
-          <WordReveal visible={wordsVisible} />
+          <WordReveal visible={wordsVisible} instant={reducedMotion} />
         </div>
       </div>
     </section>
