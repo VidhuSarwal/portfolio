@@ -6,8 +6,19 @@ import { projects } from '@/lib/projects';
 import type { Project } from '@/lib/projects';
 
 // ── Canvas color helpers (canvas ctx only — no CSS vars) ──────────────────────
-const W = (a: number) => `rgba(255,255,255,${a})`;
-const B = (a: number) => `rgba(200,228,255,${a})`;
+// Ink / accent triplets mirror --text-primary / --accent; re-synced from
+// data-theme once per frame by the draw loop.
+let INK_RGB = '255,255,255';
+let ACC_RGB = '200,228,255';
+const W = (a: number) => `rgba(${INK_RGB},${a})`;
+const B = (a: number) => `rgba(${ACC_RGB},${a})`;
+function syncPalette() {
+  const light = document.documentElement.getAttribute('data-theme') === 'light';
+  INK_RGB = light ? '28,26,23'  : '255,255,255';
+  ACC_RGB = light ? '44,82,130' : '200,228,255';
+}
+
+const FADE_MS = 370; // viz cross-fade duration
 
 // ── Per-project extended metadata ─────────────────────────────────────────────
 const EXTRA = [
@@ -700,7 +711,7 @@ function ProjectRow({
         </h3>
 
         <span
-          className="text-mono"
+          className="text-mono sbc-row-meta"
           style={{
             color: 'var(--text-tertiary)',
             textAlign: 'right',
@@ -869,10 +880,22 @@ export default function Projects() {
 
     const vz = vizRef.current;
 
+    // Pause the draw loop while the section is offscreen
+    let inView = false, running = false, lastTs = 0;
+    const vis = new IntersectionObserver(([e]) => {
+      inView = e.isIntersecting;
+      if (inView && !running) { running = true; lastTs = 0; animRef.current = requestAnimationFrame(draw); }
+    }, { rootMargin: '200px 0px' });
+    vis.observe(canvas);
+
     function draw(ts: number) {
+      if (!inView) { running = false; return; }
       const t  = ts / 1000;
+      const dt = lastTs ? Math.min(ts - lastTs, 100) : 16.7;
+      lastTs = ts;
       const cw = canvas!.offsetWidth;
       const ch = canvas!.offsetHeight;
+      syncPalette();
 
       // Reset transform to clear physical pixels, then restore
       ctx.save();
@@ -881,7 +904,8 @@ export default function Projects() {
       ctx.restore();
 
       if (vz.transitioning) {
-        vz.alpha = Math.min(1, vz.alpha + 0.045);
+        // Time-based so the fade runs the same on 60 Hz and 120 Hz displays
+        vz.alpha = Math.min(1, vz.alpha + dt / FADE_MS);
         if (vz.alpha >= 1) {
           vz.from          = vz.to;
           vz.transitioning = false;
@@ -898,10 +922,10 @@ export default function Projects() {
       animRef.current = requestAnimationFrame(draw);
     }
 
-    animRef.current = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(animRef.current);
       ro.disconnect();
+      vis.disconnect();
     };
   }, []);
 
@@ -913,7 +937,8 @@ export default function Projects() {
       aria-labelledby="projects-heading"
       style={{
         position: 'relative',
-        height:   `${(N + 1) * 100}vh`,
+        // ~85vh of scroll per project, plus one viewport for the pin itself
+        height:   `${N * 85 + 100}vh`,
         borderTop: '1px solid var(--border-rest)',
       }}
     >
@@ -947,6 +972,7 @@ export default function Projects() {
 
         {/* ── Two-column content layout ────────────────────────────────── */}
         <div
+          className="sbc-grid"
           style={{
             position: 'relative',
             zIndex:   1,
@@ -955,7 +981,6 @@ export default function Projects() {
             margin:   '0 auto',
             padding:  `clamp(28px, 4.5vh, 52px) clamp(24px, 5.5vw, 80px)`,
             display:  'grid',
-            gridTemplateColumns: '1fr 340px',
             gap:      'clamp(40px, 5vw, 80px)',
             alignItems: 'center',
           }}
@@ -1035,8 +1060,9 @@ export default function Projects() {
             </div>
           </div>
 
-          {/* ── Right: canvas visualization ───────────────────────────── */}
+          {/* ── Right: canvas visualization (hidden on narrow screens) ─── */}
           <div
+            className="sbc-viz"
             style={{
               display:        'flex',
               flexDirection:  'column',
@@ -1097,6 +1123,7 @@ export default function Projects() {
 
               <canvas
                 ref={canvasRef}
+                aria-hidden="true"
                 style={{ width: '100%', height: '100%', display: 'block' }}
               />
             </div>

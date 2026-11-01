@@ -10,6 +10,26 @@ function eo5(t: number) { return 1 - Math.pow(1 - t, 5); }
 function eio(t: number) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 function sub(pe: number, s: number, e: number) { return c01((pe - s) / (e - s)); }
 
+// ── Theme palette ─────────────────────────────────────────────────────────────
+// Canvas can't read CSS vars — mirror --text-primary / --accent / --bg-base as
+// RGB triplets, re-synced from data-theme once per frame.
+let INK_RGB = '255,255,255';
+let ACC_RGB = '200,228,255';
+let BG_RGB  = '8,8,8';
+function syncPalette() {
+  const light = document.documentElement.getAttribute('data-theme') === 'light';
+  INK_RGB = light ? '28,26,23'    : '255,255,255';
+  ACC_RGB = light ? '44,82,130'   : '200,228,255';
+  BG_RGB  = light ? '248,246,241' : '8,8,8';
+}
+
+// ── Scroll choreography (fractions of the section's scroll budget) ───────────
+const BUILD_END  = 0.64; // bridge construction completes
+const PIN_END    = 0.76; // zoom-out completes, words + signal begin
+const SIGNAL_END = 0.94; // waveform fully morphed — 0.94–1.0 holds the final frame
+const ZOOM_START = 1.12; // starting scale — keeps the frame chrome inside the viewport
+const MIN_DRAW_W = 560;  // narrower canvases draw at this logical width, scaled down
+
 // ── Geometry ──────────────────────────────────────────────────────────────────
 // All _F values are fractions of canvas dimension
 const DECK_F    = 0.54;   // deck centerline
@@ -39,7 +59,7 @@ function cabY(xF: number, w: number, h: number): number {
 function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, a: number) {
   if (a <= 0.01) return;
   ctx.save();
-  ctx.strokeStyle = 'rgba(200,228,255,1)';
+  ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
   ctx.lineWidth = 0.4;
   const cols = 24, rows = 14;
   for (let c = 0; c <= cols; c++) {
@@ -70,8 +90,8 @@ function drawElevAxis(ctx: CanvasRenderingContext2D, w: number, h: number, p: nu
   if (p <= 0) return;
   const pe = eo3(p);
   ctx.save();
-  ctx.strokeStyle = 'rgba(200,228,255,1)';
-  ctx.fillStyle   = 'rgba(200,228,255,1)';
+  ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
+  ctx.fillStyle   = `rgba(${ACC_RGB},1)`;
   ctx.lineWidth = 0.5;
   ctx.setLineDash([2, 4]);
 
@@ -134,7 +154,7 @@ function drawSeafloor(ctx: CanvasRenderingContext2D, w: number, h: number, p: nu
   ctx.save();
   // Seafloor profile
   ctx.globalAlpha = pe * 0.40;
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
   ctx.lineWidth = 1;
   ctx.beginPath();
   seafloorPts.forEach(([xF, yF], i) => {
@@ -163,7 +183,7 @@ function drawSeafloor(ctx: CanvasRenderingContext2D, w: number, h: number, p: nu
       ctx.globalAlpha = sp * 0.28 * sub(sp, i * 0.2, i * 0.2 + 0.5);
       ctx.font = '7px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
-      ctx.fillStyle = 'rgba(200,228,255,1)';
+      ctx.fillStyle = `rgba(${ACC_RGB},1)`;
       ctx.fillText(label, 34, y - 3);
     });
   }
@@ -174,14 +194,14 @@ function drawSeafloor(ctx: CanvasRenderingContext2D, w: number, h: number, p: nu
     const soundings = [0.30, 0.40, 0.50, 0.60, 0.70];
     ctx.font = '7px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(200,228,255,1)';
+    ctx.fillStyle = `rgba(${ACC_RGB},1)`;
     soundings.forEach((xF, i) => {
       const depth = [18.2, 21.5, 23.0, 20.8, 17.6][i];
       ctx.globalAlpha = wp * 0.32;
       ctx.fillText(`${depth}m`, xF * w, WATER_F * h + 16);
       // Sounding tick
       ctx.lineWidth = 0.4;
-      ctx.strokeStyle = 'rgba(200,228,255,1)';
+      ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
       ctx.beginPath();
       ctx.moveTo(xF * w, WATER_F * h + 4);
       ctx.lineTo(xF * w, WATER_F * h + 10);
@@ -204,12 +224,12 @@ function drawWaterlines(ctx: CanvasRenderingContext2D, w: number, h: number, p: 
   ];
 
   ctx.font = '7px "JetBrains Mono", monospace';
-  ctx.fillStyle = 'rgba(200,228,255,1)';
+  ctx.fillStyle = `rgba(${ACC_RGB},1)`;
   lines.forEach(({ yF, label, dash, a }, i) => {
     const lp = sub(pe, i * 0.2, i * 0.2 + 0.7);
     const y  = yF * h;
     ctx.globalAlpha = lp * a;
-    ctx.strokeStyle = 'rgba(200,228,255,1)';
+    ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
     ctx.lineWidth = 0.6;
     ctx.setLineDash(dash);
     ctx.beginPath(); ctx.moveTo(34, y); ctx.lineTo(w * lp * 0.85 + 34, y); ctx.stroke();
@@ -225,7 +245,7 @@ function drawWaterlines(ctx: CanvasRenderingContext2D, w: number, h: number, p: 
     const lx = TOW_LF * w, rx = TOW_RF * w;
     const deckY = DECK_F * h, mwlY = WATER_F * h;
     ctx.globalAlpha = cp * 0.20;
-    ctx.strokeStyle = 'rgba(200,228,255,1)';
+    ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
     ctx.lineWidth = 0.7;
     ctx.setLineDash([5, 5]);
     ctx.strokeRect(lx + 12, deckY + 4, rx - lx - 24, mwlY - deckY - 8);
@@ -248,7 +268,7 @@ function drawFoundations(ctx: CanvasRenderingContext2D, w: number, h: number, p:
   const alx = ANCH_LF * w, arx = ANCH_RF * w;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
 
   // Pier shafts at towers (wide concrete pier, from seafloor to deck)
   [[lx], [rx]].forEach(([tx]) => {
@@ -335,7 +355,7 @@ function drawApproachSpans(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const gh  = 36; // girder height
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
   ctx.lineJoin = 'miter';
 
   [[alx, lx], [rx, arx]].forEach(([x0, x1], side) => {
@@ -402,7 +422,7 @@ function drawDeckTruss(ctx: CanvasRenderingContext2D, w: number, h: number, p: n
   ctx.lineJoin = 'miter';
 
   // Chords
-  ctx.lineWidth = 1.6; ctx.globalAlpha = 0.88; ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.lineWidth = 1.6; ctx.globalAlpha = 0.88; ctx.strokeStyle = `rgba(${INK_RGB},1)`;
   ctx.beginPath(); ctx.moveTo(alx, deckY); ctx.lineTo(ex, deckY); ctx.stroke();
 
   ctx.lineWidth = 1.1; ctx.globalAlpha = 0.60;
@@ -500,7 +520,7 @@ function drawTowers(ctx: CanvasRenderingContext2D, w: number, h: number, p: numb
     const ro = tx + LEG_SEP / 2 + CW * 2;
 
     // Outer face columns (solid, heavier)
-    ctx.globalAlpha = 0.90; ctx.lineWidth = 1.8; ctx.strokeStyle = 'rgba(255,255,255,1)';
+    ctx.globalAlpha = 0.90; ctx.lineWidth = 1.8; ctx.strokeStyle = `rgba(${INK_RGB},1)`;
     ctx.beginPath();
     ctx.moveTo(lo, deckY); ctx.lineTo(lo, topLY);
     ctx.stroke();
@@ -563,7 +583,7 @@ function drawTowerBracing(ctx: CanvasRenderingContext2D, w: number, h: number, p
   const lx = TOW_LF * w, rx = TOW_RF * w;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
 
   const beamFracs = [0.22, 0.44, 0.65, 0.84]; // fraction of tower height above deck
 
@@ -663,7 +683,7 @@ function drawMainCable(ctx: CanvasRenderingContext2D, w: number, h: number, p: n
   ctx.lineJoin = 'round';
 
   // Halo
-  ctx.lineWidth = 5; ctx.globalAlpha = 0.16 * pe; ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.lineWidth = 5; ctx.globalAlpha = 0.16 * pe; ctx.strokeStyle = `rgba(${INK_RGB},1)`;
   cablePath(0); ctx.stroke();
 
   // Primary strand
@@ -688,7 +708,7 @@ function drawHangers(ctx: CanvasRenderingContext2D, w: number, h: number, p: num
   const numH = Math.round(HANGER_N * pe);
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
 
   for (let i = 0; i < numH; i++) {
     const t    = (i + 1) / (HANGER_N + 1);
@@ -731,7 +751,7 @@ function drawDeckFurniture(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const alx = ANCH_LF * w, arx = ANCH_RF * w;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
 
   // Maintenance walkway (below bottom chord)
   ctx.globalAlpha = 0.12 * pe; ctx.lineWidth = 0.5;
@@ -766,7 +786,7 @@ function drawDeckFurniture(ctx: CanvasRenderingContext2D, w: number, h: number, 
     const sp = sub(pe, 0.55, 0.90);
     ctx.globalAlpha = 0.20 * sp;
     ctx.font = '7px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(200,228,255,1)';
+    ctx.fillStyle = `rgba(${ACC_RGB},1)`;
     ctx.textAlign = 'center';
     const stations = [0.20, 0.35, 0.50, 0.65, 0.80];
     stations.forEach((xF, i) => {
@@ -789,8 +809,8 @@ function drawAnnotations(ctx: CanvasRenderingContext2D, w: number, h: number, p:
   const alx = ANCH_LF * w, arx = ANCH_RF * w;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(200,228,255,1)';
-  ctx.fillStyle   = 'rgba(200,228,255,1)';
+  ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
+  ctx.fillStyle   = `rgba(${ACC_RGB},1)`;
   ctx.lineJoin = 'miter';
 
   // ── Main span dimension arrow
@@ -855,7 +875,7 @@ function drawAnnotations(ctx: CanvasRenderingContext2D, w: number, h: number, p:
     ctx.translate(ax - 14, (tty + deckY) / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.font = '7px "JetBrains Mono", monospace'; ctx.textAlign = 'center';
-    ctx.globalAlpha = 0.38 * dp; ctx.fillStyle = 'rgba(200,228,255,1)';
+    ctx.globalAlpha = 0.38 * dp; ctx.fillStyle = `rgba(${ACC_RGB},1)`;
     ctx.fillText('TOWER HT: 152m', 0, 0);
     ctx.restore();
   }
@@ -945,9 +965,9 @@ function drawAnnotations(ctx: CanvasRenderingContext2D, w: number, h: number, p:
 
     // Opaque background so waterlines / dimension arrows don't cut through
     ctx.globalAlpha = Math.min(dp * 1.4, 1);
-    ctx.fillStyle = 'rgba(8,8,8,1)';
+    ctx.fillStyle = `rgba(${BG_RGB},1)`;
     ctx.fillRect(bx - 1, by - 1, 200, 74);
-    ctx.fillStyle = 'rgba(200,228,255,1)'; // restore
+    ctx.fillStyle = `rgba(${ACC_RGB},1)`; // restore
 
     ctx.globalAlpha = 0.62 * dp; ctx.lineWidth = 0.8; ctx.setLineDash([]);
     ctx.strokeRect(bx, by, 198, 72);
@@ -976,11 +996,11 @@ function drawAnnotations(ctx: CanvasRenderingContext2D, w: number, h: number, p:
     });
     // Filled half
     ctx.globalAlpha = 0.28 * dp;
-    ctx.fillStyle = 'rgba(200,228,255,1)';
+    ctx.fillStyle = `rgba(${ACC_RGB},1)`;
     ctx.fillRect(sx, sy - 4, 64, 8);
     ctx.font = '7px "JetBrains Mono", monospace'; ctx.textAlign = 'center';
     ctx.globalAlpha = 0.40 * dp;
-    ctx.fillStyle = 'rgba(200,228,255,1)';
+    ctx.fillStyle = `rgba(${ACC_RGB},1)`;
     ctx.fillText('0', sx, sy - 8);
     ctx.fillText('50m', sx + 64, sy - 8);
     ctx.fillText('100m', sx + 128, sy - 8);
@@ -988,7 +1008,7 @@ function drawAnnotations(ctx: CanvasRenderingContext2D, w: number, h: number, p:
 
     // North arrow
     ctx.globalAlpha = 0.32 * dp; ctx.lineWidth = 0.8;
-    ctx.strokeStyle = 'rgba(200,228,255,1)';
+    ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
     const nx = sx + 176, ny = sy - 2;
     ctx.beginPath(); ctx.moveTo(nx, ny + 14); ctx.lineTo(nx, ny - 14); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(nx, ny - 14); ctx.lineTo(nx - 5, ny + 2); ctx.lineTo(nx, ny + 4); ctx.lineTo(nx + 5, ny + 2); ctx.closePath(); ctx.stroke();
@@ -1007,7 +1027,7 @@ function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number, p: n
   const fs  = Math.min(w * 0.13, 88);
   ctx.save();
   ctx.globalAlpha = pe * 0.052;
-  ctx.fillStyle   = 'rgba(200,228,255,1)';
+  ctx.fillStyle   = `rgba(${ACC_RGB},1)`;
   ctx.font        = `700 ${fs}px 'Space Grotesk', system-ui, sans-serif`;
   ctx.textAlign   = 'center';
   ctx.textBaseline = 'middle';
@@ -1038,7 +1058,7 @@ function drawWaveform(
     { lw: 9, a: 0.04 }, { lw: 4, a: 0.11 }, { lw: 1.6, a: 0.90 },
   ];
   for (const { lw, a } of layers) {
-    ctx.lineWidth = lw; ctx.strokeStyle = `rgba(200,228,255,${a})`; ctx.lineJoin = 'round';
+    ctx.lineWidth = lw; ctx.strokeStyle = `rgba(${ACC_RGB},${a})`; ctx.lineJoin = 'round';
     ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const t      = i / steps;
@@ -1066,7 +1086,7 @@ function drawBuildCursor(
   ctx.save();
   const pulse = 0.6 + 0.4 * Math.sin(ts * 0.008);
   ctx.globalAlpha = alpha * pulse;
-  ctx.strokeStyle = 'rgba(200,228,255,1)';
+  ctx.strokeStyle = `rgba(${ACC_RGB},1)`;
   ctx.lineWidth = 0.8;
   // Crosshair arms
   ctx.beginPath();
@@ -1098,15 +1118,15 @@ function drawScanLine(
   ctx.save();
   // Glow band
   const grad = ctx.createLinearGradient(0, y - 24, 0, y + 24);
-  grad.addColorStop(0,   'rgba(200,228,255,0)');
-  grad.addColorStop(0.4, 'rgba(200,228,255,0.06)');
-  grad.addColorStop(0.5, 'rgba(200,228,255,0.18)');
-  grad.addColorStop(0.6, 'rgba(200,228,255,0.06)');
-  grad.addColorStop(1,   'rgba(200,228,255,0)');
+  grad.addColorStop(0,   `rgba(${ACC_RGB},0)`);
+  grad.addColorStop(0.4, `rgba(${ACC_RGB},0.06)`);
+  grad.addColorStop(0.5, `rgba(${ACC_RGB},0.18)`);
+  grad.addColorStop(0.6, `rgba(${ACC_RGB},0.06)`);
+  grad.addColorStop(1,   `rgba(${ACC_RGB},0)`);
   ctx.fillStyle = grad;
   ctx.fillRect(0, y - 24, w, 48);
   // Crisp leading edge
-  ctx.strokeStyle = 'rgba(200,228,255,0.45)';
+  ctx.strokeStyle = `rgba(${ACC_RGB},0.45)`;
   ctx.lineWidth = 0.7;
   ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
   ctx.restore();
@@ -1127,7 +1147,7 @@ function drawCableTension(
   const STEPS  = 120;
   ctx.save();
   ctx.globalAlpha = 0.22 * dampen;
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.strokeStyle = `rgba(${INK_RGB},1)`;
   ctx.lineWidth = 1.2;
   ctx.lineJoin = 'round';
   ctx.beginPath();
@@ -1155,7 +1175,7 @@ function drawCableTension(
 const WORDS = ['INFRA', '×', 'INTELLIGENCE'] as const;
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—/\\|';
 
-function WordReveal({ visible }: { visible: boolean }) {
+function WordReveal({ visible, instant }: { visible: boolean; instant: boolean }) {
   const [disp, setDisp] = useState<[string, string, string]>(() => [
     '·'.repeat(5),
     '×',
@@ -1173,7 +1193,11 @@ function WordReveal({ visible }: { visible: boolean }) {
     timers.current = [];
     rafs.current   = [];
 
-    if (visible) {
+    if (visible && instant) {
+      // Reduced motion: show the resolved words, no scramble
+      shown.current = true;
+      setDisp([WORDS[0], WORDS[1], WORDS[2]]);
+    } else if (visible) {
       shown.current = true;
 
       // Forward: INFRA → × → INTELLIGENCE
@@ -1244,12 +1268,12 @@ function WordReveal({ visible }: { visible: boolean }) {
       timers.current.forEach(clearTimeout);
       rafs.current.forEach(cancelAnimationFrame);
     };
-  }, [visible]);
+  }, [visible, instant]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       <div
-        aria-label="Infra meets Intelligence"
+        aria-hidden="true"
         style={{
           display: 'flex', flexWrap: 'wrap',
           gap: 'clamp(8px,1.2vw,20px)', alignItems: 'baseline',
@@ -1261,7 +1285,7 @@ function WordReveal({ visible }: { visible: boolean }) {
           <span key={i} style={{
             display: 'inline-block',
             fontFamily: 'var(--font-display), system-ui, sans-serif',
-            fontSize: word === '×' ? 'clamp(36px,5vw,72px)' : 'clamp(44px,6.5vw,96px)',
+            fontSize: word === '×' ? 'clamp(30px,5vw,72px)' : 'clamp(38px,6.5vw,96px)',
             fontWeight: 700,
             lineHeight: 0.95,
             letterSpacing: '-0.02em',
@@ -1296,9 +1320,11 @@ export default function BridgeOscilloscope() {
   const reduced    = useRef(false);
   const boxRef     = useRef<HTMLDivElement>(null);
   const [wordsVisible, setWordsVisible] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     reduced.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setReducedMotion(reduced.current);
     const section = sectionRef.current;
     const canvas  = canvasRef.current;
     if (!section || !canvas) return;
@@ -1319,14 +1345,14 @@ export default function BridgeOscilloscope() {
       const scrollable = section!.offsetHeight - window.innerHeight;
       if (scrollable <= 0) { progRef.current = 0; return; }
       progRef.current = c01(-rect.top / scrollable);
-      // Pin: drive canvas scale 1.35→1.0 as bridge finishes (76–88% of scroll)
+      // Pin: drive canvas scale ZOOM_START→1.0 once the bridge is built
       if (boxRef.current && !reduced.current) {
-        const pinP  = c01((progRef.current - 0.76) / (0.88 - 0.76));
-        const scale = lerp(1.35, 1.00, eio(pinP));
+        const pinP  = sub(progRef.current, BUILD_END, PIN_END);
+        const scale = lerp(ZOOM_START, 1.00, eio(pinP));
         boxRef.current.style.transform = `scale(${scale})`;
       }
       // Toggle words reveal — bidirectional so scrolling back hides them
-      setWordsVisible(progRef.current > 0.88);
+      setWordsVisible(progRef.current > PIN_END);
     }
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
@@ -1337,15 +1363,32 @@ export default function BridgeOscilloscope() {
     }, { threshold: 0.06 });
     io.observe(section);
 
+    // Pause the draw loop while the section is offscreen
+    let inView = false, running = false;
+    const vis = new IntersectionObserver(([e]) => {
+      inView = e.isIntersecting;
+      if (inView && !running) { running = true; animId.current = requestAnimationFrame(draw); }
+    }, { rootMargin: '200px 0px' });
+    vis.observe(section);
+
     function draw(ts: number) {
+      if (!inView) { running = false; return; }
       animId.current = requestAnimationFrame(draw);
-      const w = canvas!.offsetWidth, h = canvas!.offsetHeight;
-      if (w === 0 || h === 0) return;
-      ctx!.clearRect(0, 0, w, h);
+      const cw = canvas!.offsetWidth, ch = canvas!.offsetHeight;
+      if (cw === 0 || ch === 0) return;
+      ctx!.clearRect(0, 0, cw, ch);
+      syncPalette();
+
+      // Phones: draw at MIN_DRAW_W logical px and scale down, so the fixed-px
+      // truss / tower / label sizes keep their desktop proportions
+      const k = Math.min(1, cw / MIN_DRAW_W);
+      const w = cw / k, h = ch / k;
+      ctx!.save();
+      ctx!.scale(k, k);
 
       const prog = reduced.current ? 1 : progRef.current;
-      // Bridge builds during 0–76% of scroll; 76–88% = pin shrink; 88–100% = signal
-      const bridgeProg = reduced.current ? 1 : c01(prog / 0.76);
+      // Bridge builds during 0–BUILD_END; BUILD_END–PIN_END = zoom-out; then signal
+      const bridgeProg = reduced.current ? 1 : c01(prog / BUILD_END);
 
       // ── Cinematic phase timing (each scene budgeted within bridgeProg) ──────
       // Scene 1 "Establish" — fast cold open
@@ -1366,11 +1409,12 @@ export default function BridgeOscilloscope() {
       const hP    = sub(bridgeProg, 0.62, 0.76);
       const dfP   = sub(bridgeProg, 0.70, 0.80);
       // Scene 6 "Blueprint" — annotations cascade through to bridgeProg=1
-      const anP   = sub(bridgeProg, 0.74, 0.96);
-      const wmP   = sub(bridgeProg, 0.76, 0.96); // watermark fades in with annotation layer
-      // Scene 7+8 "Signal" — after pin completes (prog > 0.88)
-      const waveP  = sub(prog, 0.89, 0.96);
-      const morphP = sub(prog, 0.93, 1.00);
+      // Scene 6 overlaps the hangers so the drawing isn't left waiting on labels
+      const anP   = sub(bridgeProg, 0.70, 0.95);
+      const wmP   = sub(bridgeProg, 0.72, 0.95); // watermark fades in with annotation layer
+      // Scene 7+8 "Signal" — after pin completes, settles by SIGNAL_END
+      const waveP  = sub(prog, PIN_END + 0.01, PIN_END + 0.10);
+      const morphP = sub(prog, PIN_END + 0.07, SIGNAL_END);
 
       // ── Draw all layers ───────────────────────────────────────────────────
       drawGrid(ctx!, w, h, gridP);
@@ -1392,7 +1436,7 @@ export default function BridgeOscilloscope() {
 
       // ── Scan line: sweeps during blueprint reveal (bridge-local timing) ─────
       if (!reduced.current) {
-        const sweepP = sub(bridgeProg, 0.74, 0.96);
+        const sweepP = sub(bridgeProg, 0.70, 0.95);
         drawScanLine(ctx!, w, h, sweepP);
       }
 
@@ -1422,13 +1466,17 @@ export default function BridgeOscilloscope() {
         }
         if (ca > 0) drawBuildCursor(ctx!, cx, cy, ts, ca * 0.75);
       }
+      ctx!.restore();
     }
-    animId.current = requestAnimationFrame(draw);
-    if (reduced.current) setWordsVisible(true);
+    if (reduced.current) {
+      // No zoom-out under reduced motion — show the framed drawing at rest
+      if (boxRef.current) boxRef.current.style.transform = 'none';
+      setWordsVisible(true);
+    }
 
     return () => {
       cancelAnimationFrame(animId.current);
-      ro.disconnect(); io.disconnect();
+      ro.disconnect(); io.disconnect(); vis.disconnect();
       window.removeEventListener('scroll', onScroll);
     };
   }, []);
@@ -1453,7 +1501,7 @@ export default function BridgeOscilloscope() {
       id="transition"
       ref={sectionRef}
       aria-labelledby="bridge-heading"
-      style={{ position: 'relative', height: '850vh', borderTop: '1px solid var(--border-rest)', overflowX: 'clip' }}
+      style={{ position: 'relative', height: '560vh', borderTop: '1px solid var(--border-rest)', overflowX: 'clip' }}
     >
       {/* Sticky viewport */}
       <div style={{
@@ -1468,7 +1516,8 @@ export default function BridgeOscilloscope() {
       }}>
         {/* Section label — outside the box, top-left of viewport */}
         <div style={{
-          position: 'absolute', top: 'var(--margin-safe-area)', left: 'var(--margin-safe-area)',
+          // One row below the fixed VX. logo, which shares this corner
+          position: 'absolute', top: 'calc(var(--margin-safe-area) + 44px)', left: 'var(--margin-safe-area)',
           display: 'flex', alignItems: 'center', gap: '16px', zIndex: 2,
         }}>
           <p className="text-mono" style={{ color: 'var(--text-tertiary)', pointerEvents: 'none' }}>
@@ -1476,15 +1525,15 @@ export default function BridgeOscilloscope() {
           </p>
         </div>
 
-        {/* Framed canvas box — starts at 1.35× scale, shrinks to 1× during pin */}
+        {/* Framed canvas box — starts at ZOOM_START scale, shrinks to 1× during pin */}
         <div ref={boxRef} style={{
           position: 'relative',
-          width: 'clamp(560px, 88vw, 1320px)',
-          height: 'clamp(320px, 62vh, 640px)',
+          width: 'min(88vw, 1320px)',
+          height: 'clamp(220px, min(62vh, 60vw), 640px)',
           border: '1px solid var(--border-rest)',
           background: 'var(--bg-base)',
           flexShrink: 0,
-          transform: 'scale(1.35)',
+          transform: `scale(${ZOOM_START})`,
           transformOrigin: 'center 30%',
           willChange: 'transform',
         }}>
@@ -1502,10 +1551,10 @@ export default function BridgeOscilloscope() {
             paddingInline: '10px',
             zIndex: 2, pointerEvents: 'none',
           }}>
-            <span className="text-mono" style={{ color: 'var(--text-tertiary)', fontSize: '9px', letterSpacing: '0.14em' }}>
+            <span className="text-mono" style={{ color: 'var(--text-tertiary)', fontSize: '9px', letterSpacing: '0.14em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
               ELEVATION DRAWING · SIGNAL BRIDGE
             </span>
-            <span className="text-mono" style={{ color: 'var(--text-tertiary)', fontSize: '9px', letterSpacing: '0.14em' }}>
+            <span className="text-mono" style={{ color: 'var(--text-tertiary)', fontSize: '9px', letterSpacing: '0.14em', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '12px' }}>
               DWG VX-02 · REV.A
             </span>
           </div>
@@ -1527,13 +1576,14 @@ export default function BridgeOscilloscope() {
             position: 'absolute', bottom: '8px', right: '10px',
             color: 'var(--text-tertiary)', zIndex: 2, pointerEvents: 'none',
             fontSize: '9px', letterSpacing: '0.14em',
+            opacity: wordsVisible ? 0 : 1, transition: 'opacity 0.4s ease',
           }}>SCROLL ↓</p>
         </div>
 
         {/* Word reveal — below the box */}
-        <div style={{ width: 'clamp(560px, 88vw, 1320px)', zIndex: 2 }}>
+        <div style={{ width: 'min(88vw, 1320px)', zIndex: 2 }}>
           <h2 id="bridge-heading" className="sr-only">Infra meets Intelligence</h2>
-          <WordReveal visible={wordsVisible} />
+          <WordReveal visible={wordsVisible} instant={reducedMotion} />
         </div>
       </div>
     </section>

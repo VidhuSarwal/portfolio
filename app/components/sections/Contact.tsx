@@ -13,9 +13,14 @@ export default function Contact() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) return;
 
+    // gsap.context collects the tweens + ScrollTriggers so unmount can revert them
+    let gctx: { revert: () => void } | null = null;
+    let cancelled = false;
+
     async function init() {
       const gsapMod = await import('gsap');
       const stMod   = await import('gsap/ScrollTrigger');
+      if (cancelled) return;
       const gsap    = gsapMod.gsap;
       gsap.registerPlugin(stMod.ScrollTrigger);
 
@@ -26,24 +31,28 @@ export default function Contact() {
       const body    = bodyRef.current;
       const links   = linksRef.current;
 
-      [heading, body, links].forEach((el, i) => {
-        if (!el) return;
-        gsap.fromTo(
-          el,
-          { y: 30, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.7,
-            delay: i * 0.1,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: section, start: 'top 72%' },
-          }
-        );
-      });
+      gctx = gsap.context(() => {
+        [heading, body, links].forEach((el, i) => {
+          if (!el) return;
+          gsap.fromTo(
+            el,
+            { y: 30, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.7,
+              delay: i * 0.1,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: section, start: 'top 72%' },
+            }
+          );
+        });
+      }, section);
     }
 
-    init();
+    // On chunk failure the content simply stays visible (it starts unhidden)
+    init().catch(() => {});
+    return () => { cancelled = true; gctx?.revert(); };
   }, []);
 
   return (

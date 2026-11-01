@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+# Component demo scratchpads — not content
+Disallow: /bridge-demo
+Disallow: /basket-demo
+Disallow: /loader-demo
 
 Sitemap: https://vidhux.dev/sitemap.xml

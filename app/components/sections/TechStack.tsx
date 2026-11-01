@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { siteConfig } from '@/lib/config';
+import { useTheme } from '@/app/providers/ThemeContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type NodeSize   = 'XL' | 'L' | 'M' | 'S';
@@ -113,6 +114,14 @@ EDGES.forEach(({ a, b }) => {
 
 // ── Primary node IDs for ambient pulse ───────────────────────────────────────
 const PRIMARY_IDS = NODES.filter(n => n.size === 'XL' || n.size === 'L').map(n => n.id);
+const NODE_BY_ID  = new Map(NODES.map(n => [n.id, n]));
+
+// ── Theme ink (rgb triplets) — dark → light ──────────────────────────────────
+const INK_DARK     = '255,255,255';
+const INK_LIGHT    = '28,26,23';
+const RING_DARK    = '244,244,242';
+const ACCENT_DARK  = '200,228,255';
+const ACCENT_LIGHT = '44,82,130';
 
 // ── Position computation ──────────────────────────────────────────────────────
 function computePositions(w: number, h: number): Map<string, { x: number; y: number }> {
@@ -136,7 +145,7 @@ function NodeTooltip({ node, x, y, svgH, showSamsung }: {
       left: x,
       top: flipUp ? y - r - 16 : y + r + 16,
       transform: flipUp ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
-      background: 'rgba(8,8,8,0.92)',
+      background: 'color-mix(in srgb, var(--bg-elevated) 92%, transparent)',
       backdropFilter: 'blur(12px)',
       border: '1px solid var(--border-rest)',
       borderRadius: '4px',
@@ -172,7 +181,6 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
   const smoothMRef     = useRef({ x: 0, y: 0 });
   const rafRef         = useRef<number>(0);
   const inViewRef      = useRef(false);
-  const reducedRef     = useRef(false);
 
   // Pulse system
   const pulseCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -192,6 +200,9 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
   const [dims, setDims]             = useState({ w: 0, h: 0 });
   const [hoveredId, setHoveredId]   = useState<string | null>(null);
   const [entPhase, setEntPhase]     = useState(0);
+
+  const { theme } = useTheme();
+  const ink = theme === 'light' ? INK_LIGHT : INK_DARK;
 
   const positions = useMemo(() => computePositions(dims.w, dims.h), [dims]);
 
@@ -214,11 +225,6 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
 
-  // ── Reduced motion ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    reducedRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }, []);
-
   // ── IntersectionObserver + entrance sequence (once only) ────────────────────
   useEffect(() => {
     const el = containerRef.current;
@@ -236,13 +242,16 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
       entTimers.current = [t1, t2, t3, t4, t5];
     }
 
+    // Stays connected so inViewRef tracks visibility (pauses both loops offscreen);
+    // the 0 threshold guarantees a callback on full exit, 0.15 gates the entrance.
+    let entered = false;
     const obs = new IntersectionObserver(([e]) => {
       inViewRef.current = e.isIntersecting;
-      if (e.isIntersecting) {
+      if (!entered && e.intersectionRatio >= 0.15) {
+        entered = true;
         startEntrance();
-        obs.disconnect();
       }
-    }, { threshold: 0.15 });
+    }, { threshold: [0, 0.15] });
 
     obs.observe(el);
     return () => { obs.disconnect(); entTimers.current.forEach(clearTimeout); };
@@ -270,17 +279,22 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
   // ── Node drift + parallax loop ───────────────────────────────────────────────
   useEffect(() => {
     if (dims.w === 0) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cx = dims.w / 2;
     const cy = dims.h / 2;
+    let lastTs = 0;
 
     function frame(ts: number) {
       rafRef.current = requestAnimationFrame(frame);
-      if (!inViewRef.current || reducedRef.current) return;
+      if (!inViewRef.current) { lastTs = 0; return; }
+      const dt = lastTs ? Math.min((ts - lastTs) / 16.67, 3) : 1;
+      lastTs = ts;
 
       const sm = smoothMRef.current;
       const m  = mouseRef.current;
-      sm.x += (m.x - sm.x) * 0.06;
-      sm.y += (m.y - sm.y) * 0.06;
+      const k  = Math.min(1, 0.06 * dt);
+      sm.x += (m.x - sm.x) * k;
+      sm.y += (m.y - sm.y) * k;
       const dx = sm.x - cx;
       const dy = sm.y - cy;
       const t  = ts * 0.001;
@@ -330,18 +344,26 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
     if (dims.w === 0) return;
     const canvas = pulseCanvasRef.current;
     if (!canvas) return;
-    canvas.width  = dims.w;
-    canvas.height = dims.h;
+    const dpr = window.devicePixelRatio || 1;
+    const W = dims.w, H = dims.h;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const c: CanvasRenderingContext2D = ctx;
-    const cv: HTMLCanvasElement = canvas;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) return;
 
+    function activeCount() {
+      let n = 0;
+      for (const p of pulsesRef.current) if (!p.retired) n++;
+      return n;
+    }
+
     function spawnPulse() {
       if (!signalsOn.current) return;
-      if (pulsesRef.current.filter(p => !p.retired).length >= 7) return;
+      if (activeCount() >= 7) return;
       if (positionsRef.current.size === 0) return;
       const startId = NODES[Math.floor(Math.random() * NODES.length)].id;
       const adj = ADJ.get(startId);
@@ -353,28 +375,42 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
       });
     }
 
+    let lastTs = 0, cleared = false;
+
     function pulseFrame(ts: number) {
       pulseRafRef.current = requestAnimationFrame(pulseFrame);
-      if (!inViewRef.current) { c.clearRect(0, 0, cv.width, cv.height); return; }
+      // Offscreen: clear once, then idle until the observer flips inViewRef back
+      if (!inViewRef.current) {
+        if (!cleared) { c.clearRect(0, 0, W, H); cleared = true; }
+        lastTs = 0;
+        return;
+      }
+      cleared = false;
+      const dt = lastTs ? Math.min((ts - lastTs) / 16.67, 3) : 1;
+      lastTs = ts;
 
       const pos   = positionsRef.current;
       const isHov = hoveredIdRef.current !== null;
+      const light = document.documentElement.getAttribute('data-theme') === 'light';
+      const cInk    = light ? INK_LIGHT : INK_DARK;
+      const cRing   = light ? INK_LIGHT : RING_DARK;
+      const cAccent = light ? ACCENT_LIGHT : ACCENT_DARK;
 
-      c.clearRect(0, 0, cv.width, cv.height);
+      c.clearRect(0, 0, W, H);
 
       // Ambient node pulse ring
       if (ambientPulse.current) {
         const ap    = ambientPulse.current;
         const apos  = pos.get(ap.nodeId);
-        const anode = NODES.find(n => n.id === ap.nodeId);
+        const anode = NODE_BY_ID.get(ap.nodeId);
         if (apos && anode) {
-          ap.t = Math.min(ap.t + 0.005, 1);
+          ap.t = Math.min(ap.t + 0.005 * dt, 1);
           const baseR  = NODE_R[anode.size];
           const pulseR = baseR + ap.t * 24;
           const pulseO = (1 - ap.t) * 0.30;
           c.beginPath();
           c.arc(apos.x, apos.y, pulseR, 0, Math.PI * 2);
-          c.strokeStyle = `rgba(244,244,242,${pulseO})`;
+          c.strokeStyle = `rgba(${cRing},${pulseO})`;
           c.lineWidth = 0.9;
           c.stroke();
           if (ap.t >= 1) ambientPulse.current = null;
@@ -384,7 +420,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
       const toRemove: number[] = [];
 
       pulsesRef.current.forEach((pulse, idx) => {
-        pulse.opacity += ((isHov ? 0 : 1) - pulse.opacity) * 0.08;
+        pulse.opacity += ((isHov ? 0 : 1) - pulse.opacity) * Math.min(1, 0.08 * dt);
 
         if (pulse.retired) {
           if (pulse.opacity < 0.01) toRemove.push(idx);
@@ -422,7 +458,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
         const speed    = 65 / (edgeLen * 60);
         const beamFrac = 28 / edgeLen;
 
-        pulse.rawT = Math.min(pulse.rawT + speed, 1 + beamFrac + 0.001);
+        pulse.rawT = Math.min(pulse.rawT + speed * dt, 1 + beamFrac + 0.001);
 
         let headET: number;
         let tailET: number;
@@ -446,7 +482,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
           c.beginPath();
           c.moveTo(fromPos.x, fromPos.y);
           c.lineTo(headX, headY);
-          c.strokeStyle = `rgba(255,255,255,${a * 0.07})`;
+          c.strokeStyle = `rgba(${cInk},${a * 0.07})`;
           c.lineWidth = 1.8;
           c.stroke();
         }
@@ -460,7 +496,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
           c.beginPath();
           c.moveTo(tailX, tailY);
           c.lineTo(headX, headY);
-          c.strokeStyle = `rgba(200,228,255,${a * 0.72})`;
+          c.strokeStyle = `rgba(${cAccent},${a * 0.72})`;
           c.lineWidth = 1.4;
           c.stroke();
         }
@@ -476,8 +512,8 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
       }
 
       if (signalsOn.current &&
-          pulsesRef.current.filter(p => !p.retired).length < 7 &&
-          Math.random() < 0.018) {
+          activeCount() < 7 &&
+          Math.random() < 0.018 * dt) {
         spawnPulse();
       }
     }
@@ -489,7 +525,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
   // ── Interaction handlers ─────────────────────────────────────────────────────
   const handleEnter = useCallback((id: string) => {
     setHoveredId(id);
-    const node = NODES.find(n => n.id === id);
+    const node = NODE_BY_ID.get(id);
     onHoverChange?.(node?.label ?? null);
   }, [onHoverChange]);
 
@@ -507,9 +543,9 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
   };
 
   const getEdgeStroke = (edge: EdgeDef) => {
-    if (entPhase < 3) return 'rgba(255,255,255,0.032)';
-    if (hoveredId && (edge.a === hoveredId || edge.b === hoveredId)) return 'rgba(255,255,255,0.65)';
-    return `rgba(255,255,255,${EDGE_OPACITY[edge.weight]})`;
+    if (entPhase < 3) return `rgba(${ink},0.032)`;
+    if (hoveredId && (edge.a === hoveredId || edge.b === hoveredId)) return `rgba(${ink},0.65)`;
+    return `rgba(${ink},${EDGE_OPACITY[edge.weight]})`;
   };
 
   const getEdgeWidth = (edge: EdgeDef) => {
@@ -527,10 +563,10 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
     return !hoveredId ? 0.65 : id === hoveredId || ADJ.get(hoveredId)?.has(id) ? 1 : 0.10;
   };
 
-  const hovered    = hoveredId ? NODES.find(n => n.id === hoveredId) ?? null : null;
+  const hovered    = hoveredId ? NODE_BY_ID.get(hoveredId) ?? null : null;
   const hoveredPos = hoveredId ? positions.get(hoveredId) : undefined;
 
-  const T = 'transition: opacity 400ms ease-out, transform 300ms ease-out';
+  const T = 'opacity 400ms ease-out, transform 300ms ease-out';
 
   return (
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
@@ -546,10 +582,10 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
             height: 22,
             [pos.startsWith('t') ? 'top' : 'bottom']: 10,
             [pos.endsWith('l') ? 'left' : 'right']: 10,
-            borderTop:    pos.startsWith('t') ? '1px solid rgba(255,255,255,0.11)' : undefined,
-            borderBottom: pos.startsWith('b') ? '1px solid rgba(255,255,255,0.11)' : undefined,
-            borderLeft:   pos.endsWith('l')   ? '1px solid rgba(255,255,255,0.11)' : undefined,
-            borderRight:  pos.endsWith('r')   ? '1px solid rgba(255,255,255,0.11)' : undefined,
+            borderTop:    pos.startsWith('t') ? `1px solid rgba(${ink},0.11)` : undefined,
+            borderBottom: pos.startsWith('b') ? `1px solid rgba(${ink},0.11)` : undefined,
+            borderLeft:   pos.endsWith('l')   ? `1px solid rgba(${ink},0.11)` : undefined,
+            borderRight:  pos.endsWith('r')   ? `1px solid rgba(${ink},0.11)` : undefined,
             pointerEvents: 'none',
             opacity: entPhase >= 1 ? 1 : 0,
             transition: 'opacity 600ms ease-out',
@@ -566,7 +602,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
 
       {dims.w > 0 && (
         <svg
-          role="img"
+          role="group"
           aria-label="Technology stack constellation — hover nodes to explore connections"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}
         >
@@ -581,7 +617,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
               fontFamily="var(--font-jetbrains), monospace"
               fontSize={Math.min(dims.w * 0.056, 64)}
               letterSpacing="0.18em"
-              fill="rgba(255,255,255,1)"
+              fill={`rgb(${ink})`}
               style={{
                 opacity: entPhase >= 4 ? (hoveredId ? 0.014 : 0.026) : 0,
                 transition: 'opacity 700ms ease-out',
@@ -656,7 +692,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
                 >
                   {/* Persistent ring on primary nodes — vanishes when hover rings take over */}
                   {isPrimary && (
-                    <circle r={r + 6} fill="none" stroke="rgba(255,255,255,1)"
+                    <circle r={r + 6} fill="none" stroke={`rgb(${ink})`}
                       strokeWidth="0.6" vectorEffect="non-scaling-stroke"
                       style={{
                         opacity: isH ? 0 : (entPhase >= 2 ? 0.13 : 0),
@@ -672,7 +708,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
                     opacity={isH ? 0.75 : 0} vectorEffect="non-scaling-stroke"
                     style={{ transition: 'opacity 300ms ease-out', pointerEvents: 'none' } as React.CSSProperties} />
                   {/* Node fill */}
-                  <circle r={r} fill="rgba(255,255,255,0.90)"
+                  <circle r={r} fill={`rgba(${ink},0.90)`}
                     style={{
                       opacity: nO,
                       transform: isH ? 'scale(1.5)' : 'scale(1)',
@@ -683,7 +719,7 @@ function Constellation({ onHoverChange }: { onHoverChange?: (label: string | nul
                   {/* Label */}
                   <text y={r + 14} textAnchor="middle"
                     fontFamily="var(--font-jetbrains), monospace"
-                    fontSize={fs} fill="rgba(255,255,255,0.90)" letterSpacing="0.8"
+                    fontSize={fs} fill={`rgba(${ink},0.90)`} letterSpacing="0.8"
                     style={{
                       opacity: lO, userSelect: 'none',
                       transition: 'opacity 300ms ease-out', pointerEvents: 'none',

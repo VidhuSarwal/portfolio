@@ -159,11 +159,11 @@ export default function SignalPong() {
       statusIdx = (statusIdx + 1) % STATUSES.length;
     }, 4200);
 
-    // ── Theme helpers ─────────────────────────────────────────────────────
-    const isLight = () => document.documentElement.getAttribute('data-theme') === 'light';
-    const bgColor    = (a: number) => isLight() ? `rgba(248,246,241,${a})` : `rgba(8,8,8,${a})`;
-    const lineColor  = (a: number) => isLight() ? `rgba(28,26,23,${a})`    : `rgba(244,244,242,${a})`;
-    const accentColor= (a: number) => isLight() ? `rgba(44,82,130,${a})`   : `rgba(200,228,255,${a})`;
+    // ── Theme helpers — `light` is read once per frame at the top of draw() ──
+    let light = false;
+    const bgColor    = (a: number) => light ? `rgba(248,246,241,${a})` : `rgba(8,8,8,${a})`;
+    const lineColor  = (a: number) => light ? `rgba(28,26,23,${a})`    : `rgba(244,244,242,${a})`;
+    const accentColor= (a: number) => light ? `rgba(44,82,130,${a})`   : `rgba(200,228,255,${a})`;
 
     // ── Speed clamp ───────────────────────────────────────────────────────
     function clampSpeed() {
@@ -195,13 +195,16 @@ export default function SignalPong() {
 
     // ── Draw loop ─────────────────────────────────────────────────────────
     let animId = 0, lastTs = 0;
+    let running = false; // rAF only runs while the canvas is on screen
 
     function draw(ts: number) {
+      if (!running) return;
       animId = requestAnimationFrame(draw);
-      const dt = Math.min((ts - lastTs) / 16.67, 3);
+      const dt = lastTs ? Math.min((ts - lastTs) / 16.67, 3) : 1;
       lastTs = ts;
       if (fw <= 0 || fh <= 0) return;
       const ctx = canvas!.getContext('2d'); if (!ctx) return;
+      light = document.documentElement.getAttribute('data-theme') === 'light';
 
       // ── Physics ───────────────────────────────────────────────────────────
       if (!reduced) {
@@ -263,9 +266,9 @@ export default function SignalPong() {
         [ry, rvy] = springStep(ry, rvy, rightTarget, isUser ? USR_K : AI_K, isUser ? USR_D : AI_D);
         ry = Math.max(fy + RAIL_HALF, Math.min(fy + fh - RAIL_HALF, ry));
 
-        // Decay flash counters
-        if (lFlash > 0) lFlash--; if (rFlash > 0) rFlash--;
-        if (tFlash > 0) tFlash--; if (bFlash > 0) bFlash--;
+        // Decay flash counters (frames @60fps → scaled by dt)
+        lFlash = Math.max(0, lFlash - dt); rFlash = Math.max(0, rFlash - dt);
+        tFlash = Math.max(0, tFlash - dt); bFlash = Math.max(0, bFlash - dt);
         if (hbPulse > 0) hbPulse = Math.max(0, hbPulse - 0.035 * dt);
 
         // Routing node glow — proximity to beam
@@ -273,11 +276,12 @@ export default function SignalPong() {
         for (const node of nodes) {
           const d = Math.sqrt((bx - node.x) ** 2 + (by - node.y) ** 2);
           if (d < 52) node.glow = Math.max(node.glow, 1 - d / 52);
-          node.glow *= 0.93;
+          node.glow *= Math.pow(0.93, dt);
         }
 
-        // Echo ring buffer — push current beam state
-        echoBuf[echoHead] = { bx, by, nx: bvx / spd, ny: bvy / spd, len: beamLen };
+        // Echo ring buffer — overwrite the oldest slot in place
+        const eh = echoBuf[echoHead];
+        eh.bx = bx; eh.by = by; eh.nx = bvx / spd; eh.ny = bvy / spd; eh.len = beamLen;
         echoHead = (echoHead + 1) % ECHO_N;
         if (echoCount < ECHO_N) echoCount++;
       }
@@ -475,10 +479,22 @@ export default function SignalPong() {
       }
     }
 
-    animId = requestAnimationFrame(draw);
+    // ── Visibility gate — pause the loop while offscreen ──────────────────
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !running) {
+        running = true;
+        lastTs  = 0;
+        animId  = requestAnimationFrame(draw);
+      } else if (!e.isIntersecting && running) {
+        running = false;
+        cancelAnimationFrame(animId);
+      }
+    }, { threshold: 0 });
+    io.observe(canvas);
 
     return () => {
-      cancelAnimationFrame(animId); ro.disconnect();
+      running = false;
+      cancelAnimationFrame(animId); ro.disconnect(); io.disconnect();
       canvas.removeEventListener('mousemove', onMove);
       canvas.removeEventListener('mouseleave', onLeave);
       clearInterval(statusTimer);

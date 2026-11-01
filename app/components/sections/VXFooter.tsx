@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useTheme } from '@/app/providers/ThemeContext';
 
 // ─── Curated vocabulary — single chars and tight 2-char symbols only ─────────
 const TOKENS: readonly string[] = [
@@ -14,7 +15,10 @@ const TOKENS: readonly string[] = [
 const FONT_PX  = 8;
 const CELL_W   = 10;
 const CELL_H   = 12;
-const BG       = '#080808';   // matches --bg-base dark
+const BG_DARK  = '#080808';   // matches --bg-base dark
+const BG_LIGHT = '#F8F6F1';   // matches --bg-base light
+const INK_DARK  = '255,255,255';
+const INK_LIGHT = '28,26,23';
 const ALPHA_IN  = 1.00;       // inside text — full white for maximum contrast
 const ALPHA_OUT = 0.12;       // outside text
 
@@ -24,12 +28,11 @@ const P2_LEN   = 1100;  // emergence (total formation ≈ 1800ms)
 const P3_LEN   = 300;   // lock flash
 
 const NAV_LINKS = [
-  { label: 'Hero',    href: '#hero' },
-  { label: 'About',   href: '#about' },
-  { label: 'Work',    href: '#work' },
-  { label: 'Skills',  href: '#skills' },
-  { label: 'SBC',     href: '#sbc-showcase' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Hero',       href: '#hero' },
+  { label: 'Work',       href: '#sbc-showcase' },
+  { label: 'Experience', href: '#experience' },
+  { label: 'Stack',      href: '#tech-stack' },
+  { label: 'Contact',    href: '#contact' },
 ] as const;
 
 const SOCIAL_LINKS = [
@@ -94,6 +97,8 @@ export default function VXFooter() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [labelsVisible, setLabelsVisible] = useState(false);
   const [isMobile, setIsMobile]           = useState(false);
+  const { theme } = useTheme();
+  const ink = theme === 'light' ? INK_LIGHT : INK_DARK;
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -107,11 +112,15 @@ export default function VXFooter() {
     const canvas    = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isLight = () => document.documentElement.getAttribute('data-theme') === 'light';
 
     // ── Engine state ──────────────────────────────────────────────────────────
     let W = 0, H = 0, animId = 0, lastTs = 0;
+    let running = false; // rAF only runs while the footer is on screen
     let numCols = 0, numRows = 0;
 
     // Per-cell flat arrays (index = row * numCols + col)
@@ -299,10 +308,10 @@ export default function VXFooter() {
 
     // ── rAF draw loop ─────────────────────────────────────────────────────────
     function draw(ts: number) {
+      if (!running) return;
       animId = requestAnimationFrame(draw);
       if (!W || !H || !started || numCols === 0) return;
-      const ctx = canvas!.getContext('2d');
-      if (!ctx) return;
+      const c = ctx!;
 
       const dt      = lastTs > 0 ? Math.min((ts - lastTs) / (1000 / 60), 3) : 1;
       lastTs        = ts;
@@ -348,7 +357,7 @@ export default function VXFooter() {
 
       // ── Lerp cursor toward raw position ──────────────────────────────────
       if (!reduced && canHover) {
-        const lf = 0.11;
+        const lf = Math.min(1, 0.11 * dt);
         smMX = smMX < -900 ? rawMX : smMX + (rawMX - smMX) * lf;
         smMY = smMY < -900 ? rawMY : smMY + (rawMY - smMY) * lf;
       }
@@ -359,14 +368,17 @@ export default function VXFooter() {
       const parY = isHovering ? ((smMY / H) - 0.5) * -PAR_RANGE : 0;
 
       // ── Full repaint — no trail, static dense grid ───────────────────────
-      ctx.fillStyle = BG;
-      ctx.fillRect(0, 0, W, H);
+      const light = isLight();
+      c.fillStyle = light ? BG_LIGHT : BG_DARK;
+      c.fillRect(0, 0, W, H);
 
-      ctx.save();
-      ctx.translate(parX, parY);
-      ctx.font         = `${FONT_PX}px "JetBrains Mono", monospace`;
-      ctx.textAlign    = 'left';
-      ctx.textBaseline = 'top';
+      c.save();
+      c.translate(parX, parY);
+      c.font         = `${FONT_PX}px "JetBrains Mono", monospace`;
+      c.textAlign    = 'left';
+      c.textBaseline = 'top';
+      // One fill colour per frame; per-cell alpha goes through globalAlpha
+      c.fillStyle    = `rgb(${light ? INK_LIGHT : INK_DARK})`;
 
       const p2e = phase === 2 ? elapsed : 0;
 
@@ -400,11 +412,11 @@ export default function VXFooter() {
 
           if (a < 0.004) continue;
 
-          ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
-          ctx.fillText(cellChars[idx], col * CELL_W, y);
+          c.globalAlpha = a;
+          c.fillText(cellChars[idx], col * CELL_W, y);
         }
       }
-      ctx.restore();
+      c.restore();
 
       // ── Scan line: faint horizontal sweep every 8–12 seconds ────────────
       if (phase === 4) {
@@ -416,8 +428,8 @@ export default function VXFooter() {
             scanY = -1;
             nextScanAt = ts + 8000 + Math.random() * 4000;
           } else {
-            ctx.fillStyle = 'rgba(255,255,255,0.05)';
-            ctx.fillRect(0, Math.round(scanY) - 1, W, 2);
+            c.fillStyle = `rgba(${light ? INK_LIGHT : INK_DARK},0.05)`;
+            c.fillRect(0, Math.round(scanY) - 1, W, 2);
           }
         }
       }
@@ -425,22 +437,26 @@ export default function VXFooter() {
 
     // ── Reduced-motion: single static frame ───────────────────────────────────
     function drawStatic() {
-      const ctx = canvas!.getContext('2d');
-      if (!ctx || !W || !H || numCols === 0) return;
-      ctx.fillStyle = BG;
-      ctx.fillRect(0, 0, W, H);
-      ctx.font         = `${FONT_PX}px "JetBrains Mono", monospace`;
-      ctx.textAlign    = 'left';
-      ctx.textBaseline = 'top';
+      const c = ctx!;
+      if (!W || !H || numCols === 0) return;
+      const light = isLight();
+      c.fillStyle = light ? BG_LIGHT : BG_DARK;
+      c.fillRect(0, 0, W, H);
+      c.save();
+      c.font         = `${FONT_PX}px "JetBrains Mono", monospace`;
+      c.textAlign    = 'left';
+      c.textBaseline = 'top';
+      c.fillStyle    = `rgb(${light ? INK_LIGHT : INK_DARK})`;
       for (let row = 0; row < numRows; row++) {
         for (let col = 0; col < numCols; col++) {
           const idx = row * numCols + col;
           const a   = coverageToAlpha(cellCoverage[idx]);
           if (a < 0.004) continue;
-          ctx.fillStyle = `rgba(255,255,255,${a})`;
-          ctx.fillText(cellChars[idx], col * CELL_W, row * CELL_H);
+          c.globalAlpha = a;
+          c.fillText(cellChars[idx], col * CELL_W, row * CELL_H);
         }
       }
+      c.restore();
       setLabelsVisible(true);
     }
 
@@ -456,8 +472,7 @@ export default function VXFooter() {
       if (!W || !H) return;
       canvas!.width  = Math.round(W * dpr);
       canvas!.height = Math.round(H * dpr);
-      const ctx = canvas!.getContext('2d');
-      if (ctx) ctx.scale(dpr, dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
       initGrid(W, H);
       hasSize = true;
       if (started && !reduced) {
@@ -482,9 +497,11 @@ export default function VXFooter() {
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mouseleave', onMouseLeave);
 
-    // ── IntersectionObserver ──────────────────────────────────────────────────
+    // ── IntersectionObserver — starts formation once, gates the loop ─────────
+    // Threshold 0 guarantees a callback on full exit; 0.1 triggers formation.
     const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !started) {
+      const e = entries[0];
+      if (e.intersectionRatio >= 0.1 && !started) {
         started = true; hasIntersected = true;
         if (reduced) {
           maybeStatic();
@@ -494,15 +511,28 @@ export default function VXFooter() {
           nextFlickerAt = phaseStart + 6000 + Math.random() * 2000;
         }
       }
-    }, { threshold: 0.1 });
+      if (reduced) return;
+      if (e.isIntersecting && !running) {
+        running = true;
+        lastTs  = 0;
+        animId  = requestAnimationFrame(draw);
+      } else if (!e.isIntersecting && running) {
+        running = false;
+        cancelAnimationFrame(animId);
+      }
+    }, { threshold: [0, 0.1] });
     io.observe(container);
 
-    if (!reduced) animId = requestAnimationFrame(draw);
+    // ── Theme flips — redraw the static frame (the live loop reads it per frame)
+    const mo = new MutationObserver(() => { if (reduced) maybeStatic(); });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     return () => {
+      running = false;
       cancelAnimationFrame(animId);
       ro.disconnect();
       io.disconnect();
+      mo.disconnect();
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('mouseleave', onMouseLeave);
     };
@@ -518,39 +548,39 @@ export default function VXFooter() {
         style={{
           position: 'relative',
           margin: '0 clamp(24px, 4vw, 72px)',   // side inset matching Respan reference
-          border: '1px solid rgba(255,255,255,0.07)',
+          border: '1px solid var(--frame-stroke)',
         }}
       >
         {/* Corner bracket — TL */}
         <div aria-hidden="true" style={{
           position: 'absolute', top: -1, left: -1, zIndex: 2,
           width: 20, height: 20,
-          borderTop: '1px solid rgba(255,255,255,0.24)',
-          borderLeft: '1px solid rgba(255,255,255,0.24)',
+          borderTop: `1px solid rgba(${ink},0.24)`,
+          borderLeft: `1px solid rgba(${ink},0.24)`,
           pointerEvents: 'none',
         }} />
         {/* Corner bracket — TR */}
         <div aria-hidden="true" style={{
           position: 'absolute', top: -1, right: -1, zIndex: 2,
           width: 20, height: 20,
-          borderTop: '1px solid rgba(255,255,255,0.24)',
-          borderRight: '1px solid rgba(255,255,255,0.24)',
+          borderTop: `1px solid rgba(${ink},0.24)`,
+          borderRight: `1px solid rgba(${ink},0.24)`,
           pointerEvents: 'none',
         }} />
         {/* Corner bracket — BL */}
         <div aria-hidden="true" style={{
           position: 'absolute', bottom: -1, left: -1, zIndex: 2,
           width: 20, height: 20,
-          borderBottom: '1px solid rgba(255,255,255,0.24)',
-          borderLeft: '1px solid rgba(255,255,255,0.24)',
+          borderBottom: `1px solid rgba(${ink},0.24)`,
+          borderLeft: `1px solid rgba(${ink},0.24)`,
           pointerEvents: 'none',
         }} />
         {/* Corner bracket — BR */}
         <div aria-hidden="true" style={{
           position: 'absolute', bottom: -1, right: -1, zIndex: 2,
           width: 20, height: 20,
-          borderBottom: '1px solid rgba(255,255,255,0.24)',
-          borderRight: '1px solid rgba(255,255,255,0.24)',
+          borderBottom: `1px solid rgba(${ink},0.24)`,
+          borderRight: `1px solid rgba(${ink},0.24)`,
           pointerEvents: 'none',
         }} />
 
@@ -558,7 +588,7 @@ export default function VXFooter() {
         {([0.25, 0.5, 0.75] as const).map((p) => (
           <div key={`t${p}`} aria-hidden="true" style={{
             position: 'absolute', top: 0, left: `${p * 100}%`,
-            width: 1, height: 5, background: 'rgba(255,255,255,0.14)',
+            width: 1, height: 5, background: `rgba(${ink},0.14)`,
             zIndex: 2, pointerEvents: 'none',
           }} />
         ))}
@@ -566,7 +596,7 @@ export default function VXFooter() {
         {([0.33, 0.67] as const).map((p) => (
           <div key={`b${p}`} aria-hidden="true" style={{
             position: 'absolute', bottom: 0, left: `${p * 100}%`,
-            width: 1, height: 5, background: 'rgba(255,255,255,0.10)',
+            width: 1, height: 5, background: `rgba(${ink},0.10)`,
             zIndex: 2, pointerEvents: 'none',
           }} />
         ))}
@@ -675,7 +705,7 @@ export default function VXFooter() {
           style={{
             marginTop: '28px',
             paddingTop: '20px',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid var(--border-rest)',
             textAlign: 'center',
             fontFamily: 'var(--font-jetbrains), monospace',
             fontSize: '9px',

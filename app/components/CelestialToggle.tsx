@@ -31,8 +31,12 @@ export default function CelestialToggle() {
   const overlayDropRef    = useRef<SVGCircleElement>(null);
   const tlRef         = useRef<gsap.core.Timeline | null>(null);
 
-  // ── Kill timeline on unmount ────────────────────────────────────────────────
-  useEffect(() => () => { tlRef.current?.kill(); }, []);
+  // ── Kill timeline on unmount — and release the shared isAnimating lock,
+  //    since a killed timeline never reaches its onComplete ──────────────────
+  useEffect(() => () => {
+    tlRef.current?.kill();
+    setAnimating(false);
+  }, [setAnimating]);
 
   // ── Click handler ───────────────────────────────────────────────────────────
   const handleClick = useCallback(() => {

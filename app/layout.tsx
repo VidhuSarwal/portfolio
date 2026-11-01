@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 import Cursor from '@/app/components/Cursor';
 import Loader from '@/app/components/Loader';
@@ -61,8 +61,8 @@ export const metadata: Metadata = {
       "Linux kernel, distributed systems and AI infrastructure. LFX Kernel Mentorship '26 · GSoC '25 at BeagleBoard.org · Samsung PRISM.",
     locale: 'en_US',
   },
-  // Card image comes from app/opengraph-image.tsx (file convention), which
-  // Next also mirrors into twitter:image.
+  // Card images come from file conventions: app/twitter-image.tsx for X, and
+  // app/opengraph-image.tsx for everything else (WhatsApp, LinkedIn, Slack…).
   twitter: {
     card: 'summary_large_image',
     creator: X_HANDLE,
@@ -86,6 +86,11 @@ export const metadata: Metadata = {
   },
 };
 
+// Browser chrome tint on mobile — matches the default (dark) --bg-base.
+export const viewport: Viewport = {
+  themeColor: '#080808',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -95,6 +100,16 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrains.variable}`}
     >
       <body>
+        {/* Repeat visits skip the splash, but that check runs after hydration —
+            flag <html> before first paint so the white overlay never flashes.
+            Production only, matching the Loader's own vx:bp skip. */}
+        {process.env.NODE_ENV === 'production' && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: "try{if(sessionStorage.getItem('vx:bp'))document.documentElement.setAttribute('data-vx-bp','')}catch(e){}",
+            }}
+          />
+        )}
         <ThemeProvider>
           <LoaderProvider>
             <Loader />

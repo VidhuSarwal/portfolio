@@ -16,6 +16,8 @@ const STATE_LABELS: Record<string, string> = {
 const FREEZE_START = 0.08; // 8% — approach buffer, kills diagonal feel
 const FREEZE_END   = 0.14; // 14% — hold last card before section exits
 
+function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
 export default function Experience() {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef   = useRef<HTMLDivElement>(null);
@@ -56,8 +58,22 @@ export default function Experience() {
         (raw - FREEZE_START) / (1 - FREEZE_START - FREEZE_END)
       ));
 
-      const maxX = track!.scrollWidth - window.innerWidth;
-      track!.style.transform = `translateX(${-maxX * prog}px)`;
+      const vw   = window.innerWidth;
+      const maxX = track!.scrollWidth - vw;
+      let x = maxX * prog;
+      if (vw < 768) {
+        // Phones fit one card per screen: rest on each card (centred), then
+        // glide to the next — a linear pan leaves cards half off the edge
+        const cards = Array.from(track!.querySelectorAll('article'));
+        const stops = [0, ...cards.map(c =>
+          Math.max(0, Math.min(maxX, c.offsetLeft + c.offsetWidth / 2 - vw / 2)))];
+        const s = prog * (stops.length - 1);
+        const i = Math.min(Math.floor(s), stops.length - 2);
+        const f = s - i;
+        const g = f < 0.4 ? 0 : easeInOut((f - 0.4) / 0.6);
+        x = stops[i] + (stops[i + 1] - stops[i]) * g;
+      }
+      track!.style.transform = `translateX(${-x}px)`;
 
       if (lineRef.current) {
         if (!lineLen) lineLen = lineRef.current.getTotalLength?.() ?? 2400;
@@ -68,7 +84,18 @@ export default function Experience() {
         pulseRef.current.style.left = `${prog * 100}%`;
       }
 
-      const newIdx = Math.min(count - 1, Math.floor(prog * count));
+      let newIdx = Math.min(count - 1, Math.floor(prog * count));
+      if (window.innerWidth < 768) {
+        // Phones fit one card per screen — highlight whichever card is centred,
+        // so the active card is never the one half off the edge
+        const mid = window.innerWidth / 2;
+        let bestD = Infinity;
+        track!.querySelectorAll('article').forEach((card, i) => {
+          const r = card.getBoundingClientRect();
+          const d = Math.abs(r.left + r.width / 2 - mid);
+          if (d < bestD) { bestD = d; newIdx = i; }
+        });
+      }
       if (newIdx !== lastIdx) {
         lastIdx = newIdx;
         setActiveIdx(newIdx);
@@ -89,7 +116,7 @@ export default function Experience() {
 
   return (
     /*
-     * Outer section is tall (420vh) — this is the scroll budget.
+     * Outer section is tall (330vh) — this is the scroll budget.
      * The inner sticky container pins to the viewport for the full scroll budget,
      * which is how the horizontal animation feels slow and deliberate.
      */
@@ -97,7 +124,7 @@ export default function Experience() {
       id="experience"
       ref={sectionRef}
       aria-labelledby="experience-heading"
-      style={{ position: 'relative', height: '420vh' }}
+      style={{ position: 'relative', height: '330vh' }}
     >
       {/* ── Sticky viewport holder ──────────────────────────────────────────── */}
       <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
