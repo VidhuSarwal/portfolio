@@ -1,6 +1,6 @@
 // Headline credentials — shown in the Hero (`label`) and baked into the
-// social card (app/opengraph-image.tsx, `short` / `org`). Edit here and both
-// stay in sync.
+// social cards (app/twitter-image.tsx and app/opengraph-image.tsx, `short` /
+// `org`). Edit here and all three stay in sync.
 export const CREDENTIALS = [
   { index: '01', label: 'LINUX KERNEL MENTORSHIP PROGRAM · LFX', year: "'26", short: "LFX '26", org: 'Linux Kernel Mentorship' },
   { index: '02', label: 'GOOGLE SUMMER OF CODE · BEAGLEBOARD.ORG', year: "'25", short: "GSoC '25", org: 'BeagleBoard.org' },

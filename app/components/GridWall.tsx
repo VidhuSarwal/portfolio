@@ -93,20 +93,33 @@ export default function GridWall() {
     if (!ctx) return;
     const c: CanvasRenderingContext2D = ctx;
 
-    const visObs = new IntersectionObserver(
-      ([e]) => { inViewRef.current = e.isIntersecting; },
-      { threshold: 0.05 }
-    );
-    visObs.observe(canvas);
-
+    // CSS-pixel size of the canvas (backing store is W×H × devicePixelRatio)
+    let W = 0, H = 0, lastTs = 0;
+    const isTouch  = !window.matchMedia('(hover: hover)').matches;
     const isMobile = () => window.innerWidth < 768;
 
+    // ── Visibility gate — the loop only runs while the hero is on screen ──────
+    const visObs = new IntersectionObserver(([e]) => {
+      inViewRef.current = e.isIntersecting;
+      if (e.isIntersecting) {
+        if (!rafRef.current) {
+          // Snap theme blend so a toggle made offscreen doesn't fade on return
+          themeTRef.current = document.documentElement.getAttribute('data-theme') === 'light' ? 1 : 0;
+          lastTs = 0;
+          rafRef.current = requestAnimationFrame(draw);
+        }
+      } else {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = 0;
+      }
+    }, { threshold: 0 });
+    visObs.observe(canvas);
+
     function buildGrid() {
-      if (!canvas) return;
       const step = isMobile() ? STEP_MOBILE : STEP_DESKTOP;
       stepRef.current = step;
-      const cols = Math.ceil(canvas.width  / step);
-      const rows = Math.ceil(canvas.height / step);
+      const cols = Math.ceil(W / step);
+      const rows = Math.ceil(H / step);
       colsRef.current = cols;
       rowsRef.current = rows;
       pointsRef.current = [];
@@ -120,8 +133,12 @@ export default function GridWall() {
 
     function resize() {
       if (!canvas) return;
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      W = canvas.offsetWidth;
+      H = canvas.offsetHeight;
+      canvas.width  = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
       buildGrid();
     }
 
@@ -205,10 +222,10 @@ export default function GridWall() {
       c.restore();
     }
 
-    function drawSparkles(themeT: number) {
+    function drawSparkles(themeT: number, dt: number) {
       const alive: Sparkle[] = [];
       for (const s of sparklesRef.current) {
-        s.progress += s.speed;
+        s.progress += s.speed * dt;
         if (s.progress < 1) {
           drawSparkle(s, themeT);
           alive.push(s);
@@ -219,6 +236,8 @@ export default function GridWall() {
 
     function draw(ts: number) {
       if (!canvas || !ctx) return;
+      const dt = lastTs ? Math.min((ts - lastTs) / 16.67, 3) : 1;
+      lastTs = ts;
 
       if (!reducedRef.current && inViewRef.current && canSpawnRef.current) {
         if (ts - lastSpawnRef.current > nextIntervalRef.current &&
@@ -229,18 +248,16 @@ export default function GridWall() {
 
       // ── Lerp theme toward current data-theme (matches ~500ms CSS transition) ─
       const targetT = document.documentElement.getAttribute('data-theme') === 'light' ? 1 : 0;
-      themeTRef.current = lerp(themeTRef.current, targetT, 0.07);
+      themeTRef.current = lerp(themeTRef.current, targetT, Math.min(1, 0.07 * dt));
       const themeT = themeTRef.current;
 
-      c.clearRect(0, 0, canvas.width, canvas.height);
+      c.clearRect(0, 0, W, H);
 
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
       const isReduced = reducedRef.current;
-      const isTouch   = !window.matchMedia('(hover: hover)').matches;
-      const W = canvas.width;
-      const H = canvas.height;
       const crossRGB = mixRGB(CROSS_DARK, CROSS_LIGHT, themeT);
+      const k = Math.min(1, LERP_FACTOR * dt);
 
       // ── Cross marks ──────────────────────────────────────────────────────────
       for (const pt of pointsRef.current) {
@@ -256,7 +273,7 @@ export default function GridWall() {
           pt.brightness = lerp(
             pt.brightness,
             easeInOutCubic(Math.max(0, 1 - dist / FALLOFF_RADIUS)),
-            LERP_FACTOR
+            k
           );
         } else {
           pt.brightness = 0;
@@ -274,8 +291,8 @@ export default function GridWall() {
       }
 
       // ── Sparkles on top ───────────────────────────────────────────────────────
-      if (!isReduced && inViewRef.current) {
-        drawSparkles(themeT);
+      if (!isReduced) {
+        drawSparkles(themeT, dt);
       }
 
       rafRef.current = requestAnimationFrame(draw);
@@ -291,19 +308,21 @@ export default function GridWall() {
     }
     function onMouseLeave() { mouseRef.current = { x: -9999, y: -9999 }; }
 
+    // Size from the canvas box (the hero can be taller than the viewport)
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
     resize();
 
-    window.addEventListener('resize', resize);
     window.addEventListener('mousemove', onMouseMove);
     document.documentElement.addEventListener('mouseleave', onMouseLeave);
-    rafRef.current = requestAnimationFrame(draw);
 
     return () => {
       visObs.disconnect();
-      window.removeEventListener('resize', resize);
+      ro.disconnect();
       window.removeEventListener('mousemove', onMouseMove);
       document.documentElement.removeEventListener('mouseleave', onMouseLeave);
       cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
     };
   }, []);
 

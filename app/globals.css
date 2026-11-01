@@ -10,7 +10,7 @@
   --hover-surface:     rgba(255, 255, 255, 0.025);
   --text-primary:      #F4F4F2;
   --text-secondary:    #8A8A88;
-  --text-tertiary:     #4A4A48;
+  --text-tertiary:     #616160;  /* 3.2:1 on --bg-base */
   --accent:            #C8E4FF;
   --frame-stroke:      rgba(255, 255, 255, 0.07);
   --margin-safe-area:  clamp(32px, 4vw, 64px);
@@ -27,7 +27,7 @@ html[data-theme="light"] {
   --hover-surface:     rgba(0, 0, 0, 0.030);
   --text-primary:      #1C1A17;
   --text-secondary:    #6B6865;
-  --text-tertiary:     #B5B2AB;
+  --text-tertiary:     #8F8B84;  /* 3.1:1 on --bg-base */
   --accent:            #2C5282;
   --hero-overlay-near: rgba(248, 246, 241, 0.88);
   --hero-overlay-mid:  rgba(248, 246, 241, 0.52);
@@ -219,6 +219,10 @@ html.theme-transitioning *:not(canvas) {
 .corner-bracket.bracket-pulse {
   animation: bracket-pulse 0.55s ease-out forwards;
 }
+@media (prefers-reduced-motion: reduce) {
+  .corner-bracket,
+  .corner-bracket.bracket-pulse { animation: none; }
+}
 
 /* ─── Celestial toggle ──────────────────────────────────────────────── */
 @keyframes celestial-breathe {
@@ -235,6 +239,12 @@ html.theme-transitioning *:not(canvas) {
   animation: celestial-breathe 2.4s ease-in-out infinite;
   filter: url('#cg');
 }
+@media (prefers-reduced-motion: reduce) {
+  .celestial-btn:hover:not([data-animating]) .celestial-icon { animation: none; }
+}
+
+/* ─── Loader — hidden pre-hydration on repeat visits (see layout.tsx) ─ */
+html[data-vx-bp] [data-vx-loader] { display: none; }
 
 /* ─── Screen-reader only ────────────────────────────────────────────── */
 .sr-only {
@@ -255,7 +265,7 @@ html.theme-transitioning *:not(canvas) {
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 @keyframes tooltipInUp {
-  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  from { opacity: 0; transform: translateX(-50%) translateY(calc(-100% + 6px)); }
   to   { opacity: 1; transform: translateX(-50%) translateY(-100%); }
 }
 
@@ -281,7 +291,7 @@ html.theme-transitioning *:not(canvas) {
   .grid-drift { animation: none !important; }
 }
 
-/* ─── Scroll spline — desktop only ─────────────────────────────────── */
+/* ─── Scroll spline (KineticBasket right rail) — desktop only ──────── */
 .scroll-spline {
   display: none;
 }
@@ -289,6 +299,16 @@ html.theme-transitioning *:not(canvas) {
   .scroll-spline {
     display: block;
   }
+}
+
+/* ─── Selected work — list + viz columns, list only on narrow screens ─ */
+.sbc-grid {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+@media (max-width: 899px) {
+  .sbc-grid     { grid-template-columns: minmax(0, 1fr); }
+  .sbc-viz      { display: none !important; } /* beats the inline flex */
+  .sbc-row-meta { display: none; }            /* give titles the row width */
 }
 
 /* ─── Kernel view: controls, chips, view toggle ────────────────────── */

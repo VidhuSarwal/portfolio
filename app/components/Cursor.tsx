@@ -6,26 +6,43 @@ import { usePathname } from 'next/navigation';
 const TRAIL_COUNT = 6;
 const HISTORY_LENGTH = 32; // position buffer — controls trail spread
 
+// Sample history at increasing intervals for natural spread
+// i=0 is the lead dot, spaced at 0; trail dots sampled further back
+const SAMPLE_STEPS = [0, 2, 4, 7, 11, 16, 22].slice(0, TRAIL_COUNT + 1);
+
+// Per-dot size / opacity depend only on the dot index — computed once
+const DOT_SIZE = SAMPLE_STEPS.map((_, i) =>
+  i === 0 ? 5 : Math.max(1.5, 4 - (i / TRAIL_COUNT) * 2.5));
+const DOT_OPACITY = SAMPLE_STEPS.map((_, i) =>
+  i === 0 ? 1 : Math.max(0, 0.7 - (i / TRAIL_COUNT) * 0.65));
+
 export default function Cursor() {
   const bare = usePathname() === '/lore';
   const [hasHover, setHasHover] = useState(false);
+  const [reduced, setReduced] = useState(false);
   const [label, setLabel] = useState('');
 
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
   const labelRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<{ x: number; y: number }[]>([]);
+  const headRef = useRef(0); // ring-buffer index of the newest history entry
   const currentRef = useRef({ x: -200, y: -200 });
   const rafRef = useRef(0);
   const labelDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     setHasHover(window.matchMedia('(hover: hover)').matches);
+    // Reduced motion: lead dot only, no trailing dots
+    setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
+
+  const dotCount = reduced ? 1 : TRAIL_COUNT + 1;
 
   useEffect(() => {
     if (bare || !hasHover) return;
 
     historyRef.current = Array(HISTORY_LENGTH).fill({ x: -200, y: -200 });
+    headRef.current = 0;
 
     function onMouseMove(e: MouseEvent) {
       currentRef.current = { x: e.clientX, y: e.clientY };
@@ -49,29 +66,20 @@ export default function Cursor() {
     function animate() {
       const pos = currentRef.current;
 
-      // Push current position to front of history buffer
-      historyRef.current = [pos, ...historyRef.current.slice(0, HISTORY_LENGTH - 1)];
+      // Push current position into the ring buffer (newest at headRef)
+      const hist = historyRef.current;
+      headRef.current = (headRef.current + HISTORY_LENGTH - 1) % HISTORY_LENGTH;
+      hist[headRef.current] = pos;
 
-      // Sample history at increasing intervals for natural spread
-      // i=0 is the lead dot, spaced at 0; trail dots sampled further back
-      const sampleSteps = [0, 2, 4, 7, 11, 16, 22];
-
-      sampleSteps.slice(0, TRAIL_COUNT + 1).forEach((step, i) => {
+      // Size/opacity are static (set in JSX) — only position changes per frame
+      for (let i = 0; i < dotCount; i++) {
         const dot = dotsRef.current[i];
-        if (!dot) return;
-
-        const p = historyRef.current[Math.min(step, HISTORY_LENGTH - 1)];
-        const isLead = i === 0;
-        const t = i / TRAIL_COUNT; // 0 = lead, 1 = tail
-
-        const size = isLead ? 5 : Math.max(1.5, 4 - t * 2.5);
-        const opacity = isLead ? 1 : Math.max(0, 0.7 - t * 0.65);
-
+        if (!dot) continue;
+        const step = Math.min(SAMPLE_STEPS[i], HISTORY_LENGTH - 1);
+        const p    = hist[(headRef.current + step) % HISTORY_LENGTH];
+        const size = DOT_SIZE[i];
         dot.style.transform = `translate(${p.x - size / 2}px, ${p.y - size / 2}px)`;
-        dot.style.width = `${size}px`;
-        dot.style.height = `${size}px`;
-        dot.style.opacity = String(opacity);
-      });
+      }
 
       // Label follows lead dot with slight offset
       const labelEl = labelRef.current;
@@ -90,13 +98,13 @@ export default function Cursor() {
       cancelAnimationFrame(rafRef.current);
       clearTimeout(labelDebounceRef.current);
     };
-  }, [bare, hasHover]);
+  }, [bare, hasHover, dotCount]);
 
   if (bare || !hasHover) return null;
 
   return (
     <>
-      {Array.from({ length: TRAIL_COUNT + 1 }).map((_, i) => {
+      {Array.from({ length: dotCount }).map((_, i) => {
         const isLead = i === 0;
         return (
           <div
@@ -107,6 +115,10 @@ export default function Cursor() {
               position: 'fixed',
               top: 0,
               left: 0,
+              width: DOT_SIZE[i],
+              height: DOT_SIZE[i],
+              opacity: DOT_OPACITY[i],
+              transform: 'translate(-200px, -200px)',
               borderRadius: '50%',
               // Lead dot: crisp white. Trail: subtle shift toward accent
               background: isLead

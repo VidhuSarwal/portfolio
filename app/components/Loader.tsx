@@ -44,20 +44,24 @@ export default function Loader() {
   const [phase, setPhase] = useState<'visible' | 'curtain' | 'done'>('visible');
   const pathname = usePathname();
   const bare = pathname === '/lore';
+  const done = phase === 'done';
 
   // Plain pages (e.g. /lore) skip the splash entirely — mark done immediately.
   useEffect(() => {
     if (bare) markDone();
   }, [bare, markDone]);
 
-  // Blueprint canvas animation
+  // Blueprint canvas animation — torn down once the splash is done
+  // (Loader stays mounted and returns null, so `done` must be a dep)
   useEffect(() => {
-    if (bare) return;
+    if (bare || done) return;
     const canvas = canvasRef.current!;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
 
     let startTs = 0, prevTs = 0, animId = 0, lastSpawn = 0;
+    // CSS-pixel canvas size; backing store is scaled by devicePixelRatio
+    let cssW = 0, cssH = 0;
 
     const glitchPts: GlitchPt[] = [];
     const vxChars    = ['V', 'X'].map(c => ({ final: c, display: randChar(), locked: false }));
@@ -133,14 +137,23 @@ export default function Loader() {
       };
     }
 
-    const ro = new ResizeObserver(() => {
-      canvas.width  = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      cssW = canvas.offsetWidth;
+      cssH = canvas.offsetHeight;
+      canvas.width  = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       fixedLayout   = null;
-    });
+    }
+    const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    resize();
+
+    // Re-measure VX / WORKS once the web fonts land (first frame may use fallback metrics)
+    const onFonts = () => { fixedLayout = null; };
+    document.fonts?.ready.then(onFonts);
+    document.fonts?.addEventListener('loadingdone', onFonts);
 
     function spawnGlitch(cx: number, cy: number, W: number, H: number) {
       let x = 0, y = 0, tries = 0;
@@ -209,8 +222,8 @@ export default function Loader() {
       const dt      = prevTs ? (ts - prevTs) / 1000 : 0;
       prevTs        = ts;
 
-      const W = canvas.width;
-      const H = canvas.height;
+      const W = cssW;
+      const H = cssH;
       if (W === 0 || H === 0) { animId = requestAnimationFrame(draw); return; }
 
       if (!fixedLayout) fixedLayout = computeFixed(W, H);
@@ -360,8 +373,12 @@ export default function Loader() {
     }
 
     animId = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(animId); ro.disconnect(); };
-  }, [bare]);
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+      document.fonts?.removeEventListener('loadingdone', onFonts);
+    };
+  }, [bare, done]);
 
   // Splash timing — in dev, always show; in production skip on repeat visits
   useEffect(() => {
@@ -414,11 +431,12 @@ export default function Loader() {
     return () => { clearTimeout(t1); clearTimeout(t2); unlockScroll(); };
   }, [bare, markDone]);
 
-  if (bare || phase === 'done') return null;
+  if (bare || done) return null;
 
   return (
     <div
       aria-hidden="true"
+      data-vx-loader=""
       style={{
         position:      'fixed',
         inset:          0,

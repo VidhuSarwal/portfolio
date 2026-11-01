@@ -15,12 +15,14 @@ const jsonLd = {
   '@type': 'Person',
   name: 'Vidhu Sarwal',
   url: 'https://vidhux.dev',
+  image: 'https://vidhux.dev/opengraph-image',
   jobTitle: 'Systems Engineer',
   description:
     "Final-year CS undergrad specializing in Linux kernel development, distributed systems, and AI infrastructure. GSoC '25 at BeagleBoard.org, Samsung PRISM Research Intern, Linux Kernel Mentorship Program (LFX '26).",
   sameAs: [
     'https://github.com/VidhuSarwal',
     'https://linkedin.com/in/vidhusarwal',
+    'https://x.com/vidhu_sarwal',
   ],
   knowsAbout: [
     'Linux Kernel',
@@ -49,7 +51,7 @@ export default function Home() {
         {/* approach buffer — scroll distance between SBC exit and Experience sticky start */}
         <div aria-hidden style={{ height: 'clamp(120px, 16vh, 200px)' }} />
         <Experience />
-        {/* small gap after Experience's 420vh section before StatsBridge */}
+        {/* small gap after Experience's 330vh section before StatsBridge */}
         <div aria-hidden style={{ height: 'clamp(48px, 6vh, 80px)' }} />
         <StatsBridge />
         <TechStack />

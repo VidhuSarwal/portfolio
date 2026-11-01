@@ -57,7 +57,7 @@ export function Mono({ children, color = OG.ink, size = 18 }: { children: ReactN
   );
 }
 
-function Grid() {
+export function Grid() {
   const { width, height } = OG_SIZE;
   const xs = Array.from({ length: Math.floor(width / CELL) }, (_, i) => (i + 1) * CELL);
   const ys = Array.from({ length: Math.floor(height / CELL) }, (_, i) => (i + 1) * CELL);
@@ -69,7 +69,7 @@ function Grid() {
   );
 }
 
-function Bracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
+export function Bracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
   const top = corner[0] === 't';
   const left = corner[1] === 'l';
   const edge = `${STROKE}px solid ${OG.ink}`;

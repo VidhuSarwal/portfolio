@@ -40,21 +40,27 @@ export default function CornerBrackets() {
   // Listen for section-change events dispatched by NavOverlay
   useEffect(() => {
     if (bare) return;
+    // One cleanup timer per bracket — a stale timer from the previous pulse
+    // must not strip the class mid-way through the next one
+    const timers: (ReturnType<typeof setTimeout> | undefined)[] = [];
     function pulse() {
-      refs.current.forEach(el => {
+      refs.current.forEach((el, i) => {
         if (!el) return;
+        clearTimeout(timers[i]);
         // Remove and re-add the class to retrigger animation even on rapid section changes
         el.classList.remove('bracket-pulse');
         void el.offsetWidth;
         el.classList.add('bracket-pulse');
         // Clean up after animation completes
-        const t = setTimeout(() => el.classList.remove('bracket-pulse'), 600);
-        return () => clearTimeout(t);
+        timers[i] = setTimeout(() => el.classList.remove('bracket-pulse'), 600);
       });
     }
 
     document.addEventListener('section-change', pulse);
-    return () => document.removeEventListener('section-change', pulse);
+    return () => {
+      document.removeEventListener('section-change', pulse);
+      timers.forEach(t => clearTimeout(t));
+    };
   }, [bare]);
 
   if (bare) return null;

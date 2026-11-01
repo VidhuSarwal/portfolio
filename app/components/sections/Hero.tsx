@@ -23,6 +23,10 @@ function useScramble(target: string, startDelay: number, charSet = SCRAMBLE_CHAR
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) { setDisplay(target); return; }
 
+    // Inner tick + flash timers are tracked so unmount stops them too
+    let tickT: ReturnType<typeof setTimeout> | undefined;
+    let flashT: ReturnType<typeof setTimeout> | undefined;
+
     const t = setTimeout(() => {
       const PHASE1_END = 200;
       const LOCK_AT = 480;
@@ -32,7 +36,7 @@ function useScramble(target: string, startDelay: number, charSet = SCRAMBLE_CHAR
         if (elapsed >= LOCK_AT) {
           setDisplay(target);
           setFlash(true);
-          setTimeout(() => setFlash(false), 200);
+          flashT = setTimeout(() => setFlash(false), 200);
           return;
         }
         const intensity = elapsed < PHASE1_END
@@ -47,12 +51,12 @@ function useScramble(target: string, startDelay: number, charSet = SCRAMBLE_CHAR
                 : ch
           ).join('')
         );
-        setTimeout(tick, 55);
+        tickT = setTimeout(tick, 55);
       }
       tick();
     }, startDelay);
 
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); clearTimeout(tickT); clearTimeout(flashT); };
   }, [target, startDelay, charSet]);
 
   return { display, flash };
@@ -133,14 +137,21 @@ export default function Hero() {
   useEffect(() => {
     if (!isDone) return;
 
-    async function init() {
-      const gsapMod = await import('gsap');
-      const gsap = gsapMod.gsap;
+    // Fallback: never leave the hero invisible (reduced motion or gsap chunk failure)
+    function reveal() {
+      if (headingRef.current) headingRef.current.style.opacity = '1';
+      if (contentRef.current) contentRef.current.style.opacity = '1';
+    }
 
+    async function init() {
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reducedMotion) {
-        if (headingRef.current) headingRef.current.style.opacity = '1';
-        if (contentRef.current) contentRef.current.style.opacity = '1';
+      if (reducedMotion) { reveal(); return; }
+
+      let gsap: typeof import('gsap').gsap;
+      try {
+        gsap = (await import('gsap')).gsap;
+      } catch {
+        reveal();
         return;
       }
 
@@ -169,7 +180,7 @@ export default function Hero() {
         if (contentRef.current) tl.fromTo(contentRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.3');
       }
     }
-    init();
+    init().catch(reveal);
   }, [isDone]);
 
   useEffect(() => {

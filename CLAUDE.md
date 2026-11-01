@@ -37,7 +37,7 @@ Always use CSS custom properties. Never write raw hex or rgba unless inside a ca
 --bg-elevated       #0E0E0E / #EFECE5
 --text-primary      #F4F4F2 / #1C1A17
 --text-secondary    #8A8A88 / #6B6865
---text-tertiary     #4A4A48 / #B5B2AB
+--text-tertiary     #616160 / #8F8B84
 --accent            #C8E4FF / #2C5282
 --border-rest       rgba(255,255,255,0.06) / rgba(0,0,0,0.07)
 --border-active     rgba(255,255,255,0.45) / rgba(0,0,0,0.40)

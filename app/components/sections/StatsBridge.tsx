@@ -12,18 +12,27 @@ const TICKER_B =
 function useCountUp(target: number, duration = 1100) {
   const [count, setCount]   = useState(0);
   const startedRef           = useRef(false);
+  const rafRef               = useRef(0);
+
+  // Stop an in-flight count on unmount
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   const trigger = useCallback(() => {
     if (startedRef.current) return;
     startedRef.current = true;
+    // Reduced motion: no count-up, show the final value
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCount(target);
+      return;
+    }
     const t0 = performance.now();
     function tick(now: number) {
       const p = Math.min((now - t0) / duration, 1);
       const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
       setCount(Math.round(target * e));
-      if (p < 1) requestAnimationFrame(tick);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+    rafRef.current = requestAnimationFrame(tick);
   }, [target, duration]);
 
   return { count, trigger };
@@ -42,12 +51,19 @@ function StatCard({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Reduced motion: final numbers immediately, no scroll trigger
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { trigger(); return; }
+    let t: ReturnType<typeof setTimeout> | undefined;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setTimeout(trigger, delay); },
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        obs.disconnect(); // one-shot
+        t = setTimeout(trigger, delay);
+      },
       { threshold: 0.4 }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); clearTimeout(t); };
   }, [trigger, delay]);
 
   return (
@@ -55,8 +71,12 @@ function StatCard({
       ref={ref}
       role="figure"
       aria-label={`${value}${suffix} ${label}`}
+      // Focusable so keyboard users can reveal the sub line too
+      tabIndex={0}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
       style={{
         flex: 1,
         padding: 'clamp(28px, 4vh, 48px) clamp(28px, 3.5vw, 52px)',

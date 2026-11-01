@@ -1,5 +1,7 @@
 import BridgeOscilloscope from '@/app/components/sections/BridgeOscilloscope';
 
+export const metadata = { title: 'Bridge Demo', robots: { index: false, follow: false } };
+
 export default function BridgeDemoPage() {
   return (
     <main style={{ background: 'var(--bg-base)' }}>
